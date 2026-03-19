@@ -139,7 +139,7 @@ export default function MetricsSection() {
               </h2>
               <p className="text-slate-400 max-w-xl">
                 Every metric your team needs — from revenue and margin to customer behavior 
-                and marketing efficiency — surfaced in a single Power BI workspace.
+                and marketing efficiency — surfaced in a single analytics workspace.
               </p>
             </div>
             <button

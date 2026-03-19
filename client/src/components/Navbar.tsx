@@ -54,8 +54,8 @@ export default function Navbar() {
               <BarChart3 className="w-4.5 h-4.5 text-white" strokeWidth={2.5} />
             </div>
             <div>
-              <span className="font-bold text-white text-sm tracking-tight">DataPulse</span>
-              <span className="text-blue-400 text-sm font-medium"> BI</span>
+              <span className="font-bold text-white text-sm tracking-tight">Ecommerce</span>
+              <span className="text-blue-400 text-sm font-medium"> Analytics</span>
             </div>
           </div>
 

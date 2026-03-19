@@ -89,7 +89,7 @@ export default function OverviewSection() {
                 <span className="gradient-text">At a Glance</span>
               </h2>
               <p className="text-slate-400 max-w-xl">
-                Power BI dashboards that surface the metrics your team needs — from revenue trends 
+                Analytics dashboards that surface the metrics your team needs — from revenue trends 
                 to channel attribution, updated in real time.
               </p>
             </div>

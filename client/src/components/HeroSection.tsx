@@ -77,7 +77,7 @@ export default function HeroSection() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-600/15 border border-blue-500/25 text-blue-400 text-xs font-medium tracking-wide">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              Power BI · Ecommerce Analytics
+              Ecommerce Analytics
             </div>
 
             {/* Headline */}
@@ -87,7 +87,7 @@ export default function HeroSection() {
                 <span className="gradient-text">Actionable Insights</span>
               </h1>
               <p className="text-lg text-slate-400 leading-relaxed max-w-lg">
-                Purpose-built Power BI dashboards for ecommerce teams. Track revenue, orders, 
+                Purpose-built dashboards for ecommerce teams. Track revenue, orders, 
                 customer behavior, and inventory — all in one unified analytics hub.
               </p>
             </div>
@@ -134,7 +134,7 @@ export default function HeroSection() {
             <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
               <img
                 src={DASHBOARD_IMG}
-                alt="Power BI Ecommerce Dashboard Preview"
+                alt="Ecommerce Analytics Dashboard Preview"
                 className="w-full object-cover"
               />
               {/* Overlay glow */}

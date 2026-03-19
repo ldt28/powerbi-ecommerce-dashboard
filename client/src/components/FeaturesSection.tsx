@@ -23,7 +23,7 @@ const features = [
   {
     icon: Filter,
     title: "Advanced Filtering & Slicers",
-    description: "Drill down by date range, product category, region, channel, or customer segment with interactive Power BI slicers.",
+    description: "Drill down by date range, product category, region, channel, or customer segment with interactive filters.",
     color: "text-blue-400",
     bg: "bg-blue-500/10",
   },
@@ -44,7 +44,7 @@ const features = [
   {
     icon: Smartphone,
     title: "Mobile-Ready",
-    description: "Access your dashboards on any device. Power BI Mobile ensures your team stays informed on the go.",
+    description: "Access your dashboards on any device. Mobile app ensures your team stays informed on the go.",
     color: "text-cyan-400",
     bg: "bg-cyan-500/10",
   },
@@ -79,7 +79,7 @@ const features = [
   {
     icon: RefreshCw,
     title: "Incremental Refresh",
-    description: "Handle millions of rows efficiently with Power BI's incremental refresh — no more slow-loading reports.",
+    description: "Handle millions of rows efficiently with incremental refresh — no more slow-loading reports.",
     color: "text-violet-400",
     bg: "bg-violet-500/10",
   },
@@ -120,10 +120,10 @@ export default function FeaturesSection() {
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">
             Everything Your Team Needs<br />
-            <span className="gradient-text">Built Into Power BI</span>
+            <span className="gradient-text">Built Into Our Platform</span>
           </h2>
           <p className="text-slate-400 max-w-xl">
-            Leverage the full power of Microsoft Power BI — purpose-configured for ecommerce 
+            Leverage the full power of our analytics platform — purpose-configured for ecommerce 
             data workflows, team collaboration, and executive reporting.
           </p>
         </div>

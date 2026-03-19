@@ -17,12 +17,12 @@ export default function Footer() {
                 <BarChart3 className="w-4.5 h-4.5 text-white" strokeWidth={2.5} />
               </div>
               <div>
-                <span className="font-bold text-white text-sm tracking-tight">DataPulse</span>
-                <span className="text-blue-400 text-sm font-medium"> BI</span>
+                <span className="font-bold text-white text-sm tracking-tight">Ecommerce</span>
+                <span className="text-blue-400 text-sm font-medium"> Analytics</span>
               </div>
             </div>
             <p className="text-slate-500 text-sm leading-relaxed max-w-xs">
-              Purpose-built Power BI dashboards for ecommerce teams. Turn your store data 
+              Purpose-built dashboards for ecommerce teams. Turn your store data 
               into actionable insights.
             </p>
             <div className="flex items-center gap-3">
@@ -69,7 +69,7 @@ export default function Footer() {
         <div className="section-divider mb-6" />
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-slate-600 text-xs">
-            © 2024 DataPulse BI. Built for ecommerce teams.
+            © 2024 Ecommerce Analytics. Built for ecommerce teams.
           </p>
           <div className="flex items-center gap-2 text-xs text-slate-600">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

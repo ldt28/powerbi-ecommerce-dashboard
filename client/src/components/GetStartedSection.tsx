@@ -64,7 +64,7 @@ export default function GetStartedSection() {
             <span className="gradient-text">Ecommerce Data?</span>
           </h2>
           <p className="text-slate-400 max-w-lg mx-auto">
-            Tell us about your store and team. We'll set up your first Power BI dashboard 
+            Tell us about your store and team. We'll set up your first analytics dashboard 
             workspace within 24 hours.
           </p>
         </div>
@@ -107,7 +107,7 @@ export default function GetStartedSection() {
                 </div>
                 <div>
                   <p className="text-slate-300 text-sm leading-relaxed italic">
-                    "The Power BI dashboards transformed how our team makes decisions. 
+                    "Our analytics dashboards transformed how our team makes decisions. 
                     We went from weekly spreadsheet reviews to real-time visibility across all channels."
                   </p>
                   <div className="mt-3">
