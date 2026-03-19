@@ -25,6 +25,7 @@ export default function Dashboard() {
         <Route path="/dashboard/marketing" component={MarketingPerformance} />
         <Route path="/dashboard/products" component={ProductAnalysis} />
         <Route path="/dashboard/data" component={DataManagement} />
+        <Route path="" component={RevenueOverview} />
       </Switch>
     </DashboardLayout>
   );

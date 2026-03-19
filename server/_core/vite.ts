@@ -21,7 +21,14 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
+  
+  // Serve index.html for all non-API routes (SPA routing)
   app.use("*", async (req, res, next) => {
+    // Skip if it's an API route
+    if (req.path.startsWith("/api/")) {
+      return next();
+    }
+
     const url = req.originalUrl;
 
     try {

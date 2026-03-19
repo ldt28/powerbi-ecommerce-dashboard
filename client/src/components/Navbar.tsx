@@ -8,6 +8,9 @@
 
 import { useState, useEffect } from "react";
 import { BarChart3, Menu, X } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
+import { useLocation } from "wouter";
 
 const navLinks = [
   { label: "Overview", href: "#overview" },
@@ -20,6 +23,8 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const [, navigate] = useLocation();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -69,12 +74,29 @@ export default function Navbar() {
 
           {/* CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={() => handleNavClick("#get-started")}
-              className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors duration-200"
-            >
-              View Dashboards
-            </button>
+            {user ? (
+              <>
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors duration-200"
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => logout()}
+                  className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors duration-200"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => (window.location.href = getLoginUrl())}
+                className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors duration-200"
+              >
+                Sign In
+              </button>
+            )}
           </div>
 
           {/* Mobile menu toggle */}
@@ -99,6 +121,34 @@ export default function Navbar() {
               {link.label}
             </button>
           ))}
+          <div className="border-t border-white/8 mt-4 pt-4">
+            {user ? (
+              <>
+                <button
+                  onClick={() => {
+                    setMobileOpen(false);
+                    navigate("/dashboard");
+                  }}
+                  className="w-full text-left px-4 py-3 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => logout()}
+                  className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => (window.location.href = getLoginUrl())}
+                className="w-full text-left px-4 py-3 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
         </div>
       )}
     </header>
