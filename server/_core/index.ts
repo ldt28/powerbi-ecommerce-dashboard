@@ -47,7 +47,14 @@ async function startServer() {
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
-  } else {
+} else {
+    // Catch-all route for SPA - MUST be before serveStatic
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api") || req.path.startsWith("/trpc")) {
+        return next();
+      }
+      res.sendFile(path.resolve("client/dist/index.html"));
+    });
     serveStatic(app);
   }
 
