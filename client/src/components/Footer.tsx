@@ -4,8 +4,15 @@
  */
 
 import { BarChart3, Twitter, Linkedin, Github } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Footer() {
+  const [, navigate] = useLocation();
+
+  const handleNavClick = (href: string) => {
+    navigate(href);
+  };
+
   return (
     <footer className="bg-[oklch(0.09_0.02_255)] border-t border-white/8 py-12">
       <div className="container">
@@ -54,11 +61,20 @@ export default function Footer() {
           <div>
             <h4 className="text-white text-sm font-semibold mb-4">Company</h4>
             <ul className="space-y-2.5">
-              {["About Us", "Case Studies", "Documentation", "Blog", "Contact"].map((item) => (
-                <li key={item}>
-                  <a href="#get-started" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">
-                    {item}
-                  </a>
+              {[
+                { label: "About Us", href: "/about" },
+                { label: "Case Studies", href: "/case-studies" },
+                { label: "Documentation", href: "/documentation" },
+                { label: "Blog", href: "/blog" },
+                { label: "Contact", href: "/contact" },
+              ].map((item) => (
+                <li key={item.label}>
+                  <button
+                    onClick={() => handleNavClick(item.href)}
+                    className="text-slate-500 hover:text-slate-300 text-sm transition-colors text-left"
+                  >
+                    {item.label}
+                  </button>
                 </li>
               ))}
             </ul>

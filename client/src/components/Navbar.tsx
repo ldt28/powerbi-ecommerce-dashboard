@@ -3,11 +3,12 @@ import { BarChart3, Menu, X } from "lucide-react";
 import { useLocation } from "wouter";
 
 const navLinks = [
-  { label: "Overview", href: "#overview" },
-  { label: "Dashboards", href: "#dashboards" },
-  { label: "KPI Metrics", href: "#metrics" },
-  { label: "Features", href: "#features" },
-  { label: "Get Started", href: "#get-started" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Documentation", href: "/documentation" },
+  { label: "Blog", href: "/blog" },
+  { label: "Case Studies", href: "/case-studies" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export default function Navbar() {

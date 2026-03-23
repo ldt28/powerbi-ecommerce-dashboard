@@ -58,6 +58,11 @@ async function startServer() {
     serveStatic(app);
   }
 
+  // Catch-all route for SPA - serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  });
+
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
 
