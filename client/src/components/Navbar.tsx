@@ -75,6 +75,7 @@ export default function Navbar() {
 
         {/* Mobile menu toggle */}
         <button
+                    aria-label="Toggle menu"
           className="md:hidden text-slate-400"
           onClick={() => setMobileOpen(!mobileOpen)}
         >
