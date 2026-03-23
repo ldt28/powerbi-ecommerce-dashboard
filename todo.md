@@ -1,8 +1,8 @@
 # Ecommerce Analytics Dashboard - TODO
 
 ## Dashboard Pages
-- [ ] Revenue Overview (Total Revenue, by Marketplace, Trends, MoM Growth, Top Products)
-- [ ] Marketing Performance (Ad Spend, ROAS, CPA, Conversion Rate, CTR)
+- [x] Revenue Overview (Total Revenue, by Marketplace, Trends, MoM Growth, Top Products)
+- [x] Marketing Performance (Ad Spend, ROAS, CPA, Conversion Rate, CTR)
 - [ ] Product Analysis (Top Sellers, Profit Margins, Inventory, Category Performance)
 - [ ] Customer Dashboard (New Customers, LTV, Repeat Purchase Rate)
 
