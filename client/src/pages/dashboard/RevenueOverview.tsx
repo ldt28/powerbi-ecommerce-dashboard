@@ -4,19 +4,24 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { format } from "date-fns";
 import { useState } from "react";
 import { TrendingUp, Package, DollarSign, ShoppingCart } from "lucide-react";
+import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
 
 export default function RevenueOverview() {
-  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({
-    start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-    end: new Date(),
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+    to: new Date(),
   });
 
   const { data: salesData, isLoading } = trpc.dashboard.getSalesData.useQuery({
-    startDate: dateRange.start,
-    endDate: dateRange.end,
+    startDate: dateRange.from,
+    endDate: dateRange.to,
   });
+
+  const handleDateRangeChange = (newRange: DateRange) => {
+    setDateRange(newRange);
+  };
 
   if (isLoading) {
     return <div className="p-8 text-center">Loading revenue data...</div>;
@@ -94,9 +99,12 @@ export default function RevenueOverview() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Revenue Overview</h1>
-        <p className="text-muted-foreground mt-2">Track your sales across all marketplaces</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Revenue Overview</h1>
+          <p className="text-muted-foreground mt-2">Track your sales across all marketplaces</p>
+        </div>
+        <DateRangeFilter onDateRangeChange={handleDateRangeChange} defaultRange="month" />
       </div>
 
       {/* KPI Cards */}

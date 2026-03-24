@@ -3,16 +3,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
 import { useState } from "react";
+import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 
 export default function MarketingPerformance() {
-  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({
-    start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-    end: new Date(),
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+    to: new Date(),
   });
 
+  const handleDateRangeChange = (newRange: DateRange) => {
+    setDateRange(newRange);
+  };
+
   const { data: adSpendData, isLoading } = trpc.dashboard.getAdSpendData.useQuery({
-    startDate: dateRange.start,
-    endDate: dateRange.end,
+    startDate: dateRange.from,
+    endDate: dateRange.to,
   });
 
   if (isLoading) {
@@ -71,9 +76,12 @@ export default function MarketingPerformance() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Marketing Performance</h1>
-        <p className="text-gray-500 mt-2">Track your ad spend and ROI across all channels</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Marketing Performance</h1>
+          <p className="text-gray-500 mt-2">Track your ad spend and ROI across all channels</p>
+        </div>
+        <DateRangeFilter onDateRangeChange={handleDateRangeChange} defaultRange="month" />
       </div>
 
       {/* KPI Cards */}
