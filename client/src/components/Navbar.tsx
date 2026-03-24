@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { BarChart3, Menu, X } from "lucide-react";
+import { BarChart3, Menu, X, LogIn } from "lucide-react";
 import { useLocation } from "wouter";
+import { getLoginUrl } from "@/const";
 
 const navLinks = [
   { label: "Pricing", href: "/pricing" },
@@ -65,6 +66,13 @@ export default function Navbar() {
 
         {/* CTA */}
         <div className="hidden md:flex items-center gap-2">
+          <a
+            href={getLoginUrl()}
+            className="px-4 py-2 text-sm font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-all"
+          >
+            <LogIn className="w-4 h-4" />
+            Sign In
+          </a>
           <button
             onClick={() => navigate("/dashboard")}
             className="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all"
@@ -95,6 +103,14 @@ export default function Navbar() {
               {link.label}
             </button>
           ))}
+          <a
+            href={getLoginUrl()}
+            className="px-4 py-2 text-sm font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-all"
+            onClick={() => setMobileOpen(false)}
+          >
+            <LogIn className="w-4 h-4" />
+            Sign In
+          </a>
           <button
             onClick={() => { navigate("/dashboard"); setMobileOpen(false); }}
             className="mt-2 px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all"
