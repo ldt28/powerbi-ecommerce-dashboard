@@ -5,9 +5,14 @@ import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Upload } from "lucide-react";
 
 export default function DataManagement() {
-  const [activeTab, setActiveTab] = useState<"sales" | "ads" | "credentials">("sales");
+  const [activeTab, setActiveTab] = useState<"import" | "sales" | "ads" | "credentials">("import");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvType, setCsvType] = useState<"sales" | "ads">("sales");
+  const [isUploading, setIsUploading] = useState(false);
+
   const [salesForm, setSalesForm] = useState({
     orderId: "",
     marketplace: "Amazon",
@@ -39,6 +44,86 @@ export default function DataManagement() {
   const addSalesMutation = trpc.dashboard.addSalesData.useMutation();
   const addAdsMutation = trpc.dashboard.addAdSpendData.useMutation();
   const addCredentialsMutation = trpc.apiCredentials.add.useMutation();
+
+  const handleCSVUpload = async () => {
+    if (!csvFile) {
+      toast.error("Please select a CSV file");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const text = await csvFile.text();
+      const lines = text.split("\n").filter((line) => line.trim());
+
+      if (lines.length < 2) {
+        toast.error("CSV file must have headers and at least one data row");
+        setIsUploading(false);
+        return;
+      }
+
+      const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+      let successCount = 0;
+      let errorCount = 0;
+
+      if (csvType === "sales") {
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(",").map((v) => v.trim());
+          const row: Record<string, string> = {};
+          headers.forEach((header, idx) => {
+            row[header] = values[idx] || "";
+          });
+
+          try {
+            await addSalesMutation.mutateAsync({
+              orderId: row["order_id"] || row["orderid"] || `ORD-${Date.now()}`,
+              marketplace: row["marketplace"] || "Amazon",
+              productSku: row["product_sku"] || row["sku"] || "",
+              productName: row["product_name"] || row["name"] || "",
+              quantity: parseInt(row["quantity"] || "1"),
+              unitPrice: parseFloat(row["unit_price"] || row["price"] || "0"),
+              revenue: parseFloat(row["revenue"] || row["total"] || "0"),
+              cogs: parseFloat(row["cogs"] || row["cost"] || "0"),
+              orderDate: new Date(row["order_date"] || row["date"] || new Date()),
+            });
+            successCount++;
+          } catch (error) {
+            errorCount++;
+          }
+        }
+      } else {
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(",").map((v) => v.trim());
+          const row: Record<string, string> = {};
+          headers.forEach((header, idx) => {
+            row[header] = values[idx] || "";
+          });
+
+          try {
+            await addAdsMutation.mutateAsync({
+              marketplace: row["marketplace"] || "Amazon",
+              adSpend: parseFloat(row["ad_spend"] || row["spend"] || "0"),
+              impressions: parseInt(row["impressions"] || "0"),
+              clicks: parseInt(row["clicks"] || "0"),
+              conversions: parseInt(row["conversions"] || "0"),
+              revenueFromAds: parseFloat(row["revenue_from_ads"] || row["revenue"] || "0"),
+              date: new Date(row["date"] || new Date()),
+            });
+            successCount++;
+          } catch (error) {
+            errorCount++;
+          }
+        }
+      }
+
+      toast.success(`Imported ${successCount} records${errorCount > 0 ? ` (${errorCount} errors)` : ""}`);
+      setCsvFile(null);
+    } catch (error) {
+      toast.error("Failed to parse CSV file");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleAddSales = async () => {
     try {
@@ -117,26 +202,90 @@ export default function DataManagement() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 border-b">
+      <div className="flex gap-4 border-b overflow-x-auto">
+        <button
+          onClick={() => setActiveTab("import")}
+          className={`px-4 py-2 font-medium whitespace-nowrap ${activeTab === "import" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"}`}
+        >
+          Import CSV
+        </button>
         <button
           onClick={() => setActiveTab("sales")}
-          className={`px-4 py-2 font-medium ${activeTab === "sales" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"}`}
+          className={`px-4 py-2 font-medium whitespace-nowrap ${activeTab === "sales" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"}`}
         >
           Add Sales Data
         </button>
         <button
           onClick={() => setActiveTab("ads")}
-          className={`px-4 py-2 font-medium ${activeTab === "ads" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"}`}
+          className={`px-4 py-2 font-medium whitespace-nowrap ${activeTab === "ads" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"}`}
         >
           Add Ad Spend
         </button>
         <button
           onClick={() => setActiveTab("credentials")}
-          className={`px-4 py-2 font-medium ${activeTab === "credentials" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"}`}
+          className={`px-4 py-2 font-medium whitespace-nowrap ${activeTab === "credentials" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"}`}
         >
           API Credentials
         </button>
       </div>
+
+      {/* CSV Import */}
+      {activeTab === "import" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Import CSV Data</CardTitle>
+            <CardDescription>Bulk import sales or ad spend data from SellerCloud exports</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-4">
+              <div>
+                <Label>Data Type</Label>
+                <select
+                  value={csvType}
+                  onChange={(e) => setCsvType(e.target.value as "sales" | "ads")}
+                  className="w-full px-3 py-2 border rounded-md"
+                >
+                  <option value="sales">Sales Data</option>
+                  <option value="ads">Ad Spend Data</option>
+                </select>
+              </div>
+
+              <div>
+                <Label>CSV File</Label>
+                <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-gray-900/50 transition">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                    id="csv-upload"
+                  />
+                  <label htmlFor="csv-upload" className="cursor-pointer">
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-gray-500" />
+                    <p className="text-sm font-medium">{csvFile ? csvFile.name : "Click to upload CSV file"}</p>
+                    <p className="text-xs text-gray-500 mt-1">or drag and drop</p>
+                  </label>
+                </div>
+              </div>
+
+              <div className="bg-blue-900/20 border border-blue-500/30 rounded p-4">
+                <p className="text-sm font-medium mb-2">CSV Format for Sales Data:</p>
+                <code className="text-xs text-gray-400">
+                  order_id, marketplace, product_sku, product_name, quantity, unit_price, revenue, cogs, order_date
+                </code>
+                <p className="text-sm font-medium mt-4 mb-2">CSV Format for Ad Spend Data:</p>
+                <code className="text-xs text-gray-400">
+                  marketplace, ad_spend, impressions, clicks, conversions, revenue_from_ads, date
+                </code>
+              </div>
+
+              <Button onClick={handleCSVUpload} disabled={!csvFile || isUploading} className="w-full">
+                {isUploading ? "Importing..." : "Import CSV"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sales Data Form */}
       {activeTab === "sales" && (
