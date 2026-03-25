@@ -34,3 +34,8 @@
 - [x] About Us page
 - [x] Contact page
 - [x] Terms & Privacy pages
+
+## In Progress
+- [x] Drill-down functionality for Top Sellers chart (ProductDetailModal)
+- [x] Click handlers and state management for chart interactions
+- [x] Tests for drill-down feature

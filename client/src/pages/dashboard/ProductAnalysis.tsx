@@ -9,6 +9,7 @@ import { useState } from "react";
 import { TrendingUp, Package, DollarSign, Percent, AlertCircle } from "lucide-react";
 import { DateRangeFilter, type DateRange } from "@/components/DateRangeFilter";
 import { format } from "date-fns";
+import ProductDetailModal, { type ProductDetailData } from "@/components/ProductDetailModal";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
 
@@ -36,6 +37,8 @@ export default function ProductAnalysis() {
     from: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
     to: new Date(),
   });
+  const [selectedProduct, setSelectedProduct] = useState<ProductDetailData | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: salesData, isLoading } = trpc.dashboard.getSalesData.useQuery({
     startDate: dateRange.from,
@@ -45,6 +48,32 @@ export default function ProductAnalysis() {
   const handleDateRangeChange = (newRange: DateRange) => {
     setDateRange(newRange);
   };
+
+  const handleProductClick = (product: (typeof topProducts)[0], totalUnits: number) => {
+    const detailData: ProductDetailData = {
+      id: product.sku,
+      name: product.name,
+      category: product.category || "Uncategorized",
+      revenue: product.revenue,
+      profit: product.profit,
+      margin: product.margin,
+      quantity: product.quantity,
+      stock: 0,
+      reorderLevel: 0,
+      unitPrice: totalUnits > 0 ? product.revenue / product.quantity : 0,
+      unitCost: product.quantity > 0 ? product.cogs / product.quantity : 0,
+      monthlyTrend: [],
+      regionBreakdown: [],
+      customerMetrics: {
+        totalCustomers: 0,
+        repeatCustomers: 0,
+        avgOrderValue: product.revenue / Math.max(product.quantity, 1),
+        returnRate: 0,
+      },
+    };
+    setSelectedProduct(detailData);
+    setIsModalOpen(true);
+  }
 
   if (isLoading) {
     return <div className="p-8 text-center">Loading product data...</div>;
@@ -260,13 +289,21 @@ export default function ProductAnalysis() {
             <CardDescription>Best performing SKUs</CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="text-xs text-gray-500 mb-2">Click on a bar to view detailed metrics</div>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topProducts} layout="vertical">
+              <BarChart data={topProducts} layout="vertical" onClick={(state) => {
+                if (state && state.activeTooltipIndex !== undefined) {
+                  const product = topProducts[state.activeTooltipIndex];
+                  if (product) handleProductClick(product, totalUnits);
+                }
+              }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
                 <YAxis dataKey="name" type="category" width={120} />
                 <Tooltip />
-                <Bar dataKey="revenue" fill="#3b82f6" name="Revenue ($)" />
+                <Bar dataKey="revenue" fill="#3b82f6" name="Revenue ($)" onClick={(data) => {
+                  handleProductClick(data, totalUnits);
+                }} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -450,7 +487,14 @@ export default function ProductAnalysis() {
             </div>
           </CardContent>
         </Card>
-      )}
+       )}
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        product={selectedProduct}
+      />
     </div>
   );
 }
