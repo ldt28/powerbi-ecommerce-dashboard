@@ -39,3 +39,7 @@
 - [x] Drill-down functionality for Top Sellers chart (ProductDetailModal)
 - [x] Click handlers and state management for chart interactions
 - [x] Tests for drill-down feature
+
+## Bug Fixes
+- [ ] Create demo/test user for development auto-login
+- [ ] Fix dashboard 404 error by implementing dev authentication

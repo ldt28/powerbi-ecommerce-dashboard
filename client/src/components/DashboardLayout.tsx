@@ -28,8 +28,9 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+  { icon: LayoutDashboard, label: "Revenue Overview", path: "/dashboard" },
+  { icon: Users, label: "Marketing Performance", path: "/dashboard/marketing" },
+  { icon: LayoutDashboard, label: "Product Analysis", path: "/dashboard/products" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -112,7 +113,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = menuItems.find(item => location === item.path || location.startsWith(item.path + '/'));
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -181,7 +182,7 @@ function DashboardLayoutContent({
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
               {menuItems.map(item => {
-                const isActive = location === item.path;
+                const isActive = location === item.path || (item.path !== '/dashboard' && location.startsWith(item.path + '/'));
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton

@@ -28,6 +28,7 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/*" component={Dashboard} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />

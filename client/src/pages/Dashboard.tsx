@@ -32,11 +32,11 @@ const Dashboard: FC = () => {
   return (
     <DashboardLayout>
       <Switch>
-        <Route path="/" component={RevenueOverview} />
-        <Route path="/revenue" component={RevenueOverview} />
-        <Route path="/marketing" component={MarketingPerformance} />
-        <Route path="/products" component={ProductAnalysis} />
-        <Route path="/data" component={DataManagement} />
+        <Route path="/dashboard" component={RevenueOverview} />
+        <Route path="/dashboard/revenue" component={RevenueOverview} />
+        <Route path="/dashboard/marketing" component={MarketingPerformance} />
+        <Route path="/dashboard/products" component={ProductAnalysis} />
+        <Route path="/dashboard/data" component={DataManagement} />
       </Switch>
     </DashboardLayout>
   );
