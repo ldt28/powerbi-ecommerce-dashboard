@@ -4,7 +4,7 @@
 - [x] Revenue Overview (Total Revenue, by Marketplace, Trends, MoM Growth, Top Products)
 - [x] Marketing Performance (Ad Spend, ROAS, CPA, Conversion Rate, CTR)
 - [x] Product Analysis (Top Sellers, Profit Margins, Inventory, Category Performance)
-- [ ] Customer Dashboard (New Customers, LTV, Repeat Purchase Rate)
+- [x] Customer Analytics Dashboard (New Customers, LTV, Retention, Segmentation)
 
 ## Features
 - [x] Date range filtering for all dashboards
@@ -36,9 +36,10 @@
 - [x] Terms & Privacy pages
 
 ## In Progress
-- [x] Drill-down functionality for Top Sellers chart (ProductDetailModal)
-- [x] Click handlers and state management for chart interactions
-- [x] Tests for drill-down feature
+- [x] Customer Analytics Dashboard implementation
+- [x] Customer Analytics charts and visualizations
+- [x] Customer Analytics routing integration
+- [x] Customer Analytics vitest tests
 
 ## Bug Fixes
 - [ ] Create demo/test user for development auto-login

@@ -31,6 +31,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Revenue Overview", path: "/dashboard" },
   { icon: Users, label: "Marketing Performance", path: "/dashboard/marketing" },
   { icon: LayoutDashboard, label: "Product Analysis", path: "/dashboard/products" },
+  { icon: Users, label: "Customer Analytics", path: "/dashboard/customers" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
