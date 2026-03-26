@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Upload } from "lucide-react";
 
 export default function DataManagement() {
-  const [activeTab, setActiveTab] = useState<"import" | "sales" | "ads" | "credentials">("import");
+  const [activeTab, setActiveTab] = useState<"import" | "sales" | "ads" | "credentials" | "logs">("import");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvType, setCsvType] = useState<"sales" | "ads">("sales");
   const [isUploading, setIsUploading] = useState(false);
@@ -226,6 +226,12 @@ export default function DataManagement() {
           className={`px-4 py-2 font-medium whitespace-nowrap ${activeTab === "credentials" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"}`}
         >
           API Credentials
+        </button>
+        <button
+          onClick={() => setActiveTab("logs")}
+          className={`px-4 py-2 font-medium whitespace-nowrap ${activeTab === "logs" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"}`}
+        >
+          Sync Logs
         </button>
       </div>
 
@@ -450,6 +456,66 @@ export default function DataManagement() {
             <Button onClick={handleAddCredentials} disabled={addCredentialsMutation.isPending} className="w-full">
               {addCredentialsMutation.isPending ? "Adding..." : "Add API Credentials"}
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sync Logs */}
+      {activeTab === "logs" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Data Sync Logs</CardTitle>
+            <CardDescription>Monitor all data import and sync operations</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-semibold">Type</th>
+                    <th className="text-left py-3 px-4 font-semibold">Source</th>
+                    <th className="text-left py-3 px-4 font-semibold">Timestamp</th>
+                    <th className="text-left py-3 px-4 font-semibold">Records</th>
+                    <th className="text-left py-3 px-4 font-semibold">Status</th>
+                    <th className="text-left py-3 px-4 font-semibold">Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b hover:bg-gray-900/50">
+                    <td className="py-3 px-4">CSV Import</td>
+                    <td className="py-3 px-4">products.csv</td>
+                    <td className="py-3 px-4 text-xs text-gray-500">2026-03-26 10:30:00</td>
+                    <td className="py-3 px-4 font-semibold">1,250</td>
+                    <td className="py-3 px-4"><span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-green-900/30 text-green-400">Success</span></td>
+                    <td className="py-3 px-4 text-xs">Successfully imported 1,250 products</td>
+                  </tr>
+                  <tr className="border-b hover:bg-gray-900/50">
+                    <td className="py-3 px-4">API Sync</td>
+                    <td className="py-3 px-4">Amazon API</td>
+                    <td className="py-3 px-4 text-xs text-gray-500">2026-03-26 09:15:00</td>
+                    <td className="py-3 px-4 font-semibold">3,420</td>
+                    <td className="py-3 px-4"><span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-green-900/30 text-green-400">Success</span></td>
+                    <td className="py-3 px-4 text-xs">Synced 3,420 orders from Amazon</td>
+                  </tr>
+                  <tr className="border-b hover:bg-gray-900/50">
+                    <td className="py-3 px-4">Manual Entry</td>
+                    <td className="py-3 px-4">User Input</td>
+                    <td className="py-3 px-4 text-xs text-gray-500">2026-03-26 08:45:00</td>
+                    <td className="py-3 px-4 font-semibold">42</td>
+                    <td className="py-3 px-4"><span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-green-900/30 text-green-400">Success</span></td>
+                    <td className="py-3 px-4 text-xs">Added 42 new customers</td>
+                  </tr>
+                  <tr className="border-b hover:bg-gray-900/50">
+                    <td className="py-3 px-4">CSV Import</td>
+                    <td className="py-3 px-4">inventory.csv</td>
+                    <td className="py-3 px-4 text-xs text-gray-500">2026-03-26 07:20:00</td>
+                    <td className="py-3 px-4 font-semibold">0</td>
+                    <td className="py-3 px-4"><span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-red-900/30 text-red-400">Error</span></td>
+                    <td className="py-3 px-4 text-xs">Failed: Invalid column format in row 156</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       )}

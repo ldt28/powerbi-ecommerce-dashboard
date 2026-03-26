@@ -16,10 +16,10 @@
 - [ ] Marketplace comparison view
 
 ## Data Management
-- [ ] CSV/Excel import feature
-- [ ] Manual data entry forms
-- [ ] Data sync logs
-- [ ] API credential management
+- [x] CSV/Excel import feature
+- [x] Manual data entry forms
+- [x] Data sync logs
+- [x] API credential management
 
 ## Navigation & UX
 - [x] Add navigation links to all pages
@@ -84,3 +84,10 @@
 - [x] Integrate Google Analytics data into Channels
 - [x] Add GA metrics cards and charts
 - [x] Write vitest tests for GA integration (39 tests passing)
+
+
+## Data Management
+- [x] CSV/Excel import feature
+- [x] Manual data entry forms
+- [x] Data sync logs
+- [x] API credential management
