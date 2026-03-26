@@ -5,6 +5,7 @@
 - [x] Marketing Performance (Ad Spend, ROAS, CPA, Conversion Rate, CTR)
 - [x] Product Analysis (Top Sellers, Profit Margins, Inventory, Category Performance)
 - [x] Customer Analytics Dashboard (New Customers, LTV, Retention, Segmentation)
+- [x] Email Marketing Dashboard (Campaign Performance, Engagement, ROI, Segment Impact)
 
 ## Features
 - [x] Date range filtering for all dashboards
@@ -36,10 +37,10 @@
 - [x] Terms & Privacy pages
 
 ## In Progress
-- [x] Customer Analytics Dashboard implementation
-- [x] Customer Analytics charts and visualizations
-- [x] Customer Analytics routing integration
-- [x] Customer Analytics vitest tests
+- [x] Email Marketing Dashboard implementation
+- [x] Email Marketing charts and visualizations
+- [x] Email Marketing routing integration
+- [x] Email Marketing vitest tests
 
 ## Bug Fixes
 - [ ] Create demo/test user for development auto-login
