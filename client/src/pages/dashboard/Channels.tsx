@@ -21,10 +21,13 @@ import {
   Scatter,
 } from "recharts";
 import { TrendingUp, Users, DollarSign, Target, Activity, ArrowRight } from "lucide-react";
+import { ChannelNavigation } from "@/components/ChannelNavigation";
+import { getAggregateGAMetrics } from "@/lib/googleAnalytics";
 
 /**
  * Channels Dashboard
  * Tracks marketing channel performance, ROI, customer acquisition, and conversion metrics
+ * Includes Google Analytics integration and channel navigation
  */
 
 // Mock data for channel performance
@@ -203,6 +206,9 @@ export default function Channels() {
 
   return (
     <div className="space-y-6">
+      {/* Channel Navigation */}
+      <ChannelNavigation />
+      
       {/* Link to Platform Details */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
         <div className="flex items-center justify-between">
@@ -310,6 +316,63 @@ export default function Channels() {
         </Card>
       </div>
 
+
+      {/* Google Analytics Metrics */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Google Analytics Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {(() => {
+            const gaMetrics = getAggregateGAMetrics();
+            return (
+              <>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
+                    <Activity className="h-4 w-4 text-blue-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{(gaMetrics.totalSessions / 1000).toFixed(1)}K</div>
+                    <p className="text-xs text-muted-foreground">Across all channels</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                    <Users className="h-4 w-4 text-green-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{(gaMetrics.totalUsers / 1000).toFixed(1)}K</div>
+                    <p className="text-xs text-muted-foreground">Unique visitors</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Avg Bounce Rate</CardTitle>
+                    <Target className="h-4 w-4 text-orange-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{gaMetrics.avgBounceRate.toFixed(1)}%</div>
+                    <p className="text-xs text-muted-foreground">Lower is better</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">GA Revenue</CardTitle>
+                    <DollarSign className="h-4 w-4 text-purple-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">${(gaMetrics.totalRevenue / 1000).toFixed(1)}K</div>
+                    <p className="text-xs text-muted-foreground">From GA tracked</p>
+                  </CardContent>
+                </Card>
+              </>
+            );
+          })()}
+        </div>
+      </div>
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue by Channel */}
