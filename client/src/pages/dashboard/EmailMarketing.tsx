@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { ExportButtons } from "@/components/ExportButtons";
 import {
   LineChart,
   Line,
@@ -151,7 +152,32 @@ export default function EmailMarketing() {
             Track email campaign performance, engagement, and revenue impact
           </p>
         </div>
-        <DateRangeFilter onDateRangeChange={handleDateRangeChange} defaultRange="month" />
+        <div className="flex gap-3 items-start">
+          <ExportButtons
+            title="Email Marketing Report"
+            dateRange={{ from: dateRange.startDate, to: dateRange.endDate }}
+            data={{
+              kpis: {
+                "Emails Sent": `${(totalSent / 1000).toFixed(1)}K`,
+                "Open Rate": `${avgOpenRate.toFixed(1)}%`,
+                "Click Rate": `${avgClickRate.toFixed(2)}%`,
+                "Conversion Rate": `${avgConversionRate.toFixed(2)}%`,
+                "Email Revenue": `$${(totalRevenue / 1000).toFixed(1)}K`,
+              },
+              tables: [
+                {
+                  title: "Campaign Performance",
+                  data: campaignPerformance,
+                },
+                {
+                  title: "Segment Performance",
+                  data: segmentPerformance,
+                },
+              ],
+            }}
+          />
+          <DateRangeFilter onDateRangeChange={handleDateRangeChange} defaultRange="month" />
+        </div>
       </div>
 
       {/* KPI Cards */}

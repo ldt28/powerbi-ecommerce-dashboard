@@ -45,3 +45,10 @@
 ## Bug Fixes
 - [ ] Create demo/test user for development auto-login
 - [ ] Fix dashboard 404 error by implementing dev authentication
+
+
+## Export Functionality
+- [x] CSV/PDF export utility functions
+- [x] Export buttons on Email Marketing dashboard
+- [x] Data transformation for exports
+- [x] Export functionality tests (29 tests passing)
