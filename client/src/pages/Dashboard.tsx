@@ -10,6 +10,7 @@ import ProductAnalysis from "./dashboard/ProductAnalysis";
 import CustomerAnalytics from "./dashboard/CustomerAnalytics";
 import EmailMarketing from "./dashboard/EmailMarketing";
 import Channels from "./dashboard/Channels";
+import ChannelPlatforms from "./dashboard/ChannelPlatforms";
 import DataManagement from "./dashboard/DataManagement";
 
 const Dashboard: FC = () => {
@@ -42,6 +43,7 @@ const Dashboard: FC = () => {
         <Route path="/dashboard/customers" component={CustomerAnalytics} />
         <Route path="/dashboard/email" component={EmailMarketing} />
         <Route path="/dashboard/channels" component={Channels} />
+        <Route path="/dashboard/channels/platforms" component={ChannelPlatforms} />
         <Route path="/dashboard/data" component={DataManagement} />
       </Switch>
     </DashboardLayout>

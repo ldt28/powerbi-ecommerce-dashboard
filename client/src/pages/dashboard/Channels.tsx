@@ -20,7 +20,7 @@ import {
   ScatterChart,
   Scatter,
 } from "recharts";
-import { TrendingUp, Users, DollarSign, Target, Activity } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Target, Activity, ArrowRight } from "lucide-react";
 
 /**
  * Channels Dashboard
@@ -203,6 +203,19 @@ export default function Channels() {
 
   return (
     <div className="space-y-6">
+      {/* Link to Platform Details */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">View Retail Platform Details</h2>
+            <p className="text-blue-100">Dive deeper into performance metrics for each retail platform including Amazon, eBay, Walmart, and more.</p>
+          </div>
+          <a href="/dashboard/channels/platforms" className="inline-flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
+            View Platforms
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </div>
+      </div>
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
