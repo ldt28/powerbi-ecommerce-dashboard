@@ -19,6 +19,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { TrendingUp, ShoppingCart, DollarSign, Users, Star } from "lucide-react";
+import { Link } from "wouter";
 
 /**
  * Channel Platforms Dashboard
@@ -501,7 +502,11 @@ export default function ChannelPlatforms() {
               <tbody>
                 {Object.entries(platformsData).map(([key, platform]) => (
                   <tr key={key} className="border-b hover:bg-muted/50">
-                    <td className="py-3 px-4 font-medium">{platform.name}</td>
+                    <td className="py-3 px-4 font-medium">
+                      <Link href={`/dashboard/store/${key}`} className="text-blue-600 hover:underline">
+                        {platform.name}
+                      </Link>
+                    </td>
                     <td className="text-right py-3 px-4 text-green-600 font-semibold">
                       ${platform.metrics.revenue.toLocaleString()}
                     </td>

@@ -69,3 +69,11 @@
 - [x] Add WebStores, Tractor Supply, AutoZone, Northern Tool, Lowe's metrics
 - [x] Integrate platform tabs into Channels dashboard
 - [x] Write vitest tests for platform metrics (48 tests passing)
+
+
+## Store Detail Pages
+- [x] Create PlatformStoreDetail component
+- [x] Add store-specific analytics and charts
+- [x] Make store names clickable links
+- [x] Add routing for store detail pages
+- [x] Write vitest tests for store pages (25 tests passing)
