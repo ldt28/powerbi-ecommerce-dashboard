@@ -1,0 +1,21 @@
+CREATE TABLE `api_connections` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`platform` varchar(64) NOT NULL,
+	`connectionName` varchar(255) NOT NULL,
+	`connectionType` varchar(64) NOT NULL,
+	`accessToken` text,
+	`refreshToken` text,
+	`expiresAt` timestamp,
+	`accountId` varchar(255),
+	`accountEmail` varchar(320),
+	`accountName` varchar(255),
+	`isActive` int NOT NULL DEFAULT 1,
+	`lastSyncedAt` timestamp,
+	`syncStatus` varchar(64) DEFAULT 'idle',
+	`syncError` text,
+	`metadata` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `api_connections_id` PRIMARY KEY(`id`)
+);

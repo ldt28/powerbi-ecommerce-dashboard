@@ -43,6 +43,31 @@ export const apiCredentials = mysqlTable("api_credentials", {
 export type ApiCredential = typeof apiCredentials.$inferSelect;
 export type InsertApiCredential = typeof apiCredentials.$inferInsert;
 
+// API Connections table for managing various platform integrations
+export const apiConnections = mysqlTable("api_connections", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  platform: varchar("platform", { length: 64 }).notNull(),
+  connectionName: varchar("connectionName", { length: 255 }).notNull(),
+  connectionType: varchar("connectionType", { length: 64 }).notNull(),
+  accessToken: text("accessToken"),
+  refreshToken: text("refreshToken"),
+  expiresAt: timestamp("expiresAt"),
+  accountId: varchar("accountId", { length: 255 }),
+  accountEmail: varchar("accountEmail", { length: 320 }),
+  accountName: varchar("accountName", { length: 255 }),
+  isActive: int("isActive").default(1).notNull(),
+  lastSyncedAt: timestamp("lastSyncedAt"),
+  syncStatus: varchar("syncStatus", { length: 64 }).default("idle"),
+  syncError: text("syncError"),
+  metadata: text("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ApiConnection = typeof apiConnections.$inferSelect;
+export type InsertApiConnection = typeof apiConnections.$inferInsert;
+
 // Sales Data table
 export const salesData = mysqlTable("sales_data", {
   id: int("id").autoincrement().primaryKey(),

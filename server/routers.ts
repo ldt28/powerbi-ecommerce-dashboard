@@ -5,6 +5,7 @@ import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
 import { getSalesDataByUser, getAdSpendDataByUser, getApiCredentialsByUser, insertSalesData, insertAdSpendData, insertApiCredential, getApiCredentialByMarketplace } from "./db";
 import { TRPCError } from "@trpc/server";
+import { apiConnectionsRouter } from "./routers/api-connections";
 
 export const appRouter = router({
   system: systemRouter,
@@ -169,6 +170,9 @@ export const appRouter = router({
         }
       }),
   }),
+
+  // API Connections router
+  apiConnections: router(apiConnectionsRouter),
 });
 
 export type AppRouter = typeof appRouter;

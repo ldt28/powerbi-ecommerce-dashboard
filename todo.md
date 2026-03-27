@@ -113,3 +113,12 @@
 - [x] Build SavedConfigurations list and load functionality
 - [x] Integrate saved configurations into DashboardComparison
 - [x] Write vitest tests for configuration save/load (32 tests passing)
+
+## API Connections & Social Integration
+- [x] Design API connections data model and authentication flow
+- [x] Create API connections management backend (tRPC procedures)
+- [ ] Build API Connections UI component with form validation
+- [ ] Implement Google OAuth and API integration
+- [ ] Implement Facebook Graph API integration
+- [ ] Create Social tab component for dashboard
+- [ ] Write vitest tests for API connections

@@ -15,6 +15,13 @@
       "when": 1773938058972,
       "tag": "0001_spooky_nighthawk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1774618494290,
+      "tag": "0002_elite_madame_hydra",
+      "breakpoints": true
     }
   ]
 }
