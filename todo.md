@@ -117,8 +117,8 @@
 ## API Connections & Social Integration
 - [x] Design API connections data model and authentication flow
 - [x] Create API connections management backend (tRPC procedures)
-- [ ] Build API Connections UI component with form validation
-- [ ] Implement Google OAuth and API integration
-- [ ] Implement Facebook Graph API integration
-- [ ] Create Social tab component for dashboard
-- [ ] Write vitest tests for API connections
+- [x] Build API Connections UI component with form validation
+- [x] Implement Google OAuth and API integration
+- [x] Implement Facebook Graph API integration
+- [x] Create Social tab component for dashboard
+- [x] Write vitest tests for API connections (all 368 tests passing)

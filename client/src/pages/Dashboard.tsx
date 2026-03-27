@@ -15,6 +15,7 @@ import ChannelPlatforms from "./dashboard/ChannelPlatforms";
 import PlatformStoreDetail from "./dashboard/PlatformStoreDetail";
 import DataManagement from "./dashboard/DataManagement";
 import DashboardComparison from "@/components/dashboard/DashboardComparison";
+import Social from "./Social";
 
 const Dashboard: FC = () => {
   const { user, loading } = useAuth();
@@ -50,6 +51,7 @@ const Dashboard: FC = () => {
         <Route path="/dashboard/store/:storeName" component={PlatformStoreDetail} />
         <Route path="/dashboard/data" component={DataManagement} />
         <Route path="/dashboard/comparison" component={DashboardComparison} />
+        <Route path="/dashboard/social" component={Social} />
       </Switch>
     </DashboardLayout>
   );
