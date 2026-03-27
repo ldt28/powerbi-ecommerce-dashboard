@@ -28,12 +28,12 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
+  { icon: Zap, label: "Channels", path: "/dashboard/channels" },
   { icon: LayoutDashboard, label: "Revenue Overview", path: "/dashboard" },
   { icon: Users, label: "Marketing Performance", path: "/dashboard/marketing" },
   { icon: LayoutDashboard, label: "Product Analysis", path: "/dashboard/products" },
   { icon: Users, label: "Customer Analytics", path: "/dashboard/customers" },
   { icon: Mail, label: "Email Marketing", path: "/dashboard/email" },
-  { icon: Zap, label: "Channels", path: "/dashboard/channels" },
   { icon: Database, label: "Data Management", path: "/dashboard/data" },
 ];
 
