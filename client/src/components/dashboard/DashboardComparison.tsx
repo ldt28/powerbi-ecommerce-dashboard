@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,7 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowUpRight, ArrowDownRight, TrendingUp } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Save } from "lucide-react";
+import SaveConfigurationModal, { type ComparisonConfig } from "./SaveConfigurationModal";
+import SavedConfigurations from "./SavedConfigurations";
 import {
   BarChart,
   Bar,
@@ -126,6 +128,42 @@ export default function DashboardComparison() {
   const [comparisonType, setComparisonType] = useState<ComparisonType>("period");
   const [periodType, setPeriodType] = useState<PeriodType>("month");
   const [selectedPlatforms, setSelectedPlatforms] = useState<PlatformType[]>(["amazon", "ebay"]);
+  const [savedConfigs, setSavedConfigs] = useState<ComparisonConfig[]>([]);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+
+  // Load saved configurations from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("dashboardComparisonConfigs");
+    if (saved) {
+      try {
+        setSavedConfigs(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load saved configurations", e);
+      }
+    }
+  }, []);
+
+  // Save configurations to localStorage
+  const handleSaveConfig = (config: ComparisonConfig) => {
+    const updated = [...savedConfigs, config];
+    setSavedConfigs(updated);
+    localStorage.setItem("dashboardComparisonConfigs", JSON.stringify(updated));
+    setShowSaveModal(false);
+  };
+
+  // Load a saved configuration
+  const handleLoadConfig = (config: ComparisonConfig) => {
+    setComparisonType(config.comparisonType);
+    if (config.periodType) setPeriodType(config.periodType);
+    if (config.selectedPlatforms) setSelectedPlatforms(config.selectedPlatforms as PlatformType[]);
+  };
+
+  // Delete a saved configuration
+  const handleDeleteConfig = (configId: string) => {
+    const updated = savedConfigs.filter(c => c.id !== configId);
+    setSavedConfigs(updated);
+    localStorage.setItem("dashboardComparisonConfigs", JSON.stringify(updated));
+  };
 
   const periodData = generatePeriodData(periodType);
   const platformData = generatePlatformData();
@@ -192,10 +230,35 @@ export default function DashboardComparison() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard Comparison</h1>
-        <p className="text-muted-foreground mt-2">Compare metrics across different time periods or platforms</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard Comparison</h1>
+          <p className="text-muted-foreground mt-2">Compare metrics across different time periods or platforms</p>
+        </div>
+        <Button onClick={() => setShowSaveModal(true)} className="gap-2">
+          <Save className="h-4 w-4" />
+          Save Configuration
+        </Button>
       </div>
+
+      {/* Saved Configurations */}
+      {savedConfigs.length > 0 && (
+        <SavedConfigurations
+          configurations={savedConfigs}
+          onLoad={handleLoadConfig}
+          onDelete={handleDeleteConfig}
+        />
+      )}
+
+      {/* Save Configuration Modal */}
+      <SaveConfigurationModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onSave={handleSaveConfig}
+        comparisonType={comparisonType}
+        periodType={periodType}
+        selectedPlatforms={selectedPlatforms}
+      />
 
       {/* Comparison Controls */}
       <Card>

@@ -106,3 +106,10 @@
 - [x] Build comparison cards and metrics visualization
 - [x] Integrate comparison view into dashboard navigation
 - [x] Write vitest tests for comparison functionality (42 tests passing)
+
+## Saved Comparison Configurations
+- [x] Design saved configurations data model and storage
+- [x] Create SaveConfigurationModal component for naming and saving
+- [x] Build SavedConfigurations list and load functionality
+- [x] Integrate saved configurations into DashboardComparison
+- [x] Write vitest tests for configuration save/load (32 tests passing)
