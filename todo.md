@@ -99,3 +99,10 @@
 - [x] Add real-time data streaming and WebSocket integration
 - [x] Create sales activity feed and recent transactions display
 - [x] Write vitest tests for real-time sales dashboard (36 tests passing)
+
+## Dashboard Comparison View
+- [x] Design comparison view structure and data model
+- [x] Create DashboardComparison.tsx component with period/platform selection
+- [x] Build comparison cards and metrics visualization
+- [x] Integrate comparison view into dashboard navigation
+- [x] Write vitest tests for comparison functionality (42 tests passing)

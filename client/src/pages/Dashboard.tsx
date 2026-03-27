@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import type { FC } from "react";
+import RealtimeSales from "./dashboard/RealtimeSales";
 import RevenueOverview from "./dashboard/RevenueOverview";
 import MarketingPerformance from "./dashboard/MarketingPerformance";
 import ProductAnalysis from "./dashboard/ProductAnalysis";
@@ -13,6 +14,7 @@ import Channels from "./dashboard/Channels";
 import ChannelPlatforms from "./dashboard/ChannelPlatforms";
 import PlatformStoreDetail from "./dashboard/PlatformStoreDetail";
 import DataManagement from "./dashboard/DataManagement";
+import DashboardComparison from "@/components/dashboard/DashboardComparison";
 
 const Dashboard: FC = () => {
   const { user, loading } = useAuth();
@@ -47,6 +49,7 @@ const Dashboard: FC = () => {
         <Route path="/dashboard/channels/platforms" component={ChannelPlatforms} />
         <Route path="/dashboard/store/:storeName" component={PlatformStoreDetail} />
         <Route path="/dashboard/data" component={DataManagement} />
+        <Route path="/dashboard/comparison" component={DashboardComparison} />
       </Switch>
     </DashboardLayout>
   );
