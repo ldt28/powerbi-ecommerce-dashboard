@@ -8,7 +8,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { trpc } from "@/lib/trpc";
 
-type Platform = "google" | "facebook" | "amazon" | "ebay" | "walmart" | "instagram";
+type Platform = "google" | "facebook" | "amazon" | "ebay" | "walmart" | "instagram" | "youtube" | "tiktok" | "x" | "pinterest" | "snapchat" | "linkedin";
 type ConnectionType = "analytics" | "ads" | "commerce" | "social";
 
 interface PlatformConfig {
@@ -200,6 +200,180 @@ const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
     ],
     description: "Connect your Instagram Business account",
   },
+  youtube: {
+    label: "YouTube",
+    icon: "▶️",
+    types: ["social", "analytics"],
+    fields: [
+      {
+        name: "accessToken",
+        label: "Access Token",
+        type: "password",
+        required: true,
+        placeholder: "Your YouTube API access token",
+      },
+      {
+        name: "accountId",
+        label: "Channel ID",
+        type: "text",
+        required: false,
+        placeholder: "Your YouTube Channel ID",
+      },
+      {
+        name: "accountName",
+        label: "Channel Name",
+        type: "text",
+        required: false,
+        placeholder: "My YouTube Channel",
+      },
+    ],
+    description: "Connect your YouTube channel for analytics and content insights",
+  },
+  tiktok: {
+    label: "TikTok",
+    icon: "🎵",
+    types: ["social", "analytics"],
+    fields: [
+      {
+        name: "accessToken",
+        label: "Access Token",
+        type: "password",
+        required: true,
+        placeholder: "Your TikTok API access token",
+      },
+      {
+        name: "accountId",
+        label: "Account ID",
+        type: "text",
+        required: false,
+        placeholder: "Your TikTok Account ID",
+      },
+      {
+        name: "accountName",
+        label: "Account Name",
+        type: "text",
+        required: false,
+        placeholder: "My TikTok Account",
+      },
+    ],
+    description: "Connect your TikTok business account",
+  },
+  x: {
+    label: "X (Twitter)",
+    icon: "𝕏",
+    types: ["social", "analytics"],
+    fields: [
+      {
+        name: "accessToken",
+        label: "Bearer Token",
+        type: "password",
+        required: true,
+        placeholder: "Your X API bearer token",
+      },
+      {
+        name: "accountId",
+        label: "Account ID",
+        type: "text",
+        required: false,
+        placeholder: "Your X Account ID",
+      },
+      {
+        name: "accountName",
+        label: "Username",
+        type: "text",
+        required: false,
+        placeholder: "@myusername",
+      },
+    ],
+    description: "Connect your X (Twitter) account",
+  },
+  pinterest: {
+    label: "Pinterest",
+    icon: "📌",
+    types: ["social", "commerce"],
+    fields: [
+      {
+        name: "accessToken",
+        label: "Access Token",
+        type: "password",
+        required: true,
+        placeholder: "Your Pinterest API access token",
+      },
+      {
+        name: "accountId",
+        label: "Business Account ID",
+        type: "text",
+        required: false,
+        placeholder: "Your Pinterest Business Account ID",
+      },
+      {
+        name: "accountName",
+        label: "Account Name",
+        type: "text",
+        required: false,
+        placeholder: "My Pinterest Business",
+      },
+    ],
+    description: "Connect your Pinterest business account",
+  },
+  snapchat: {
+    label: "Snapchat",
+    icon: "👻",
+    types: ["social", "ads"],
+    fields: [
+      {
+        name: "accessToken",
+        label: "Access Token",
+        type: "password",
+        required: true,
+        placeholder: "Your Snapchat API access token",
+      },
+      {
+        name: "accountId",
+        label: "Ad Account ID",
+        type: "text",
+        required: false,
+        placeholder: "Your Snapchat Ad Account ID",
+      },
+      {
+        name: "accountName",
+        label: "Account Name",
+        type: "text",
+        required: false,
+        placeholder: "My Snapchat Business",
+      },
+    ],
+    description: "Connect your Snapchat business account",
+  },
+  linkedin: {
+    label: "LinkedIn",
+    icon: "in",
+    types: ["social", "ads"],
+    fields: [
+      {
+        name: "accessToken",
+        label: "Access Token",
+        type: "password",
+        required: true,
+        placeholder: "Your LinkedIn API access token",
+      },
+      {
+        name: "accountId",
+        label: "Organization ID",
+        type: "text",
+        required: false,
+        placeholder: "Your LinkedIn Organization ID",
+      },
+      {
+        name: "accountName",
+        label: "Company Name",
+        type: "text",
+        required: false,
+        placeholder: "My Company",
+      },
+    ],
+    description: "Connect your LinkedIn company account",
+  },
 };
 
 interface AddConnectionModalProps {
@@ -248,7 +422,7 @@ export function AddConnectionModal({
       const result = await createConnection.mutateAsync({
         platform: selectedPlatform,
         connectionName,
-        connectionType: selectedType || "analytics",
+        connectionType: selectedType || "social",
         accessToken: formData.accessToken,
         refreshToken: formData.refreshToken,
         accountId: formData.accountId,

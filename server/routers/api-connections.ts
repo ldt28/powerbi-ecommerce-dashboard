@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 import {
   createApiConnection,
   getUserApiConnections,
@@ -10,14 +11,13 @@ import {
   updateSyncStatus,
   getActiveApiConnections,
 } from "../db-api-connections";
-import { TRPCError } from "@trpc/server";
 
 export const apiConnectionsRouter = {
   // Create a new API connection
   create: protectedProcedure
     .input(
       z.object({
-        platform: z.enum(["google", "facebook", "amazon", "ebay", "walmart", "instagram"]),
+        platform: z.enum(["google", "facebook", "amazon", "ebay", "walmart", "instagram", "youtube", "tiktok", "x", "pinterest", "snapchat", "linkedin"]),
         connectionName: z.string().min(1).max(255),
         connectionType: z.enum(["analytics", "ads", "commerce", "social"]),
         accessToken: z.string(),

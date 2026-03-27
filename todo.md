@@ -122,3 +122,11 @@
 - [x] Implement Facebook Graph API integration
 - [x] Create Social tab component for dashboard
 - [x] Write vitest tests for API connections (all 368 tests passing)
+
+## Expanded Social Media Platform Support
+- [x] Update database schema to support additional platforms
+- [x] Expand AddConnectionModal with new platform configurations
+- [x] Add platform-specific credential fields and validation
+- [x] Update API connection testing for new platforms
+- [x] Update platform icons and labels
+- [x] Write tests for new platforms (all 368 tests passing)
