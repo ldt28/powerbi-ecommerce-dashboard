@@ -122,3 +122,31 @@ export const dataSyncLog = mysqlTable("data_sync_log", {
 
 export type DataSyncLog = typeof dataSyncLog.$inferSelect;
 export type InsertDataSyncLog = typeof dataSyncLog.$inferInsert;
+
+// OAuth2 Tokens table for secure token storage and management
+export const oauth2Tokens = mysqlTable("oauth2_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  platform: varchar("platform", { length: 64 }).notNull(), // google, facebook, linkedin, tiktok
+  accessToken: text("accessToken").notNull(),
+  refreshToken: text("refreshToken"),
+  idToken: text("idToken"), // For OpenID Connect providers
+  tokenType: varchar("tokenType", { length: 32 }).default("Bearer").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  scope: text("scope"), // Space-separated list of scopes
+  state: varchar("state", { length: 255 }), // CSRF protection state
+  codeVerifier: varchar("codeVerifier", { length: 255 }), // PKCE code verifier
+  accountId: varchar("accountId", { length: 255 }).notNull(),
+  accountEmail: varchar("accountEmail", { length: 320 }),
+  accountName: varchar("accountName", { length: 255 }),
+  profilePicture: text("profilePicture"),
+  isActive: int("isActive").default(1).notNull(),
+  lastRefreshedAt: timestamp("lastRefreshedAt"),
+  refreshAttempts: int("refreshAttempts").default(0).notNull(),
+  lastRefreshError: text("lastRefreshError"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OAuth2Token = typeof oauth2Tokens.$inferSelect;
+export type InsertOAuth2Token = typeof oauth2Tokens.$inferInsert;

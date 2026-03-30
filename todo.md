@@ -130,3 +130,11 @@
 - [x] Update API connection testing for new platforms
 - [x] Update platform icons and labels
 - [x] Write tests for new platforms (all 368 tests passing)
+
+## OAuth2 Implementation
+- [x] Design OAuth2 token storage schema and security model
+- [x] Create OAuth2 authorization server and callback handlers
+- [x] Implement token refresh logic with automatic expiry handling
+- [x] Build OAuth2 client integration for each platform
+- [x] Create OAuth2 UI flow components and state management
+- [x] Write vitest tests for OAuth2 flows (50 tests passing)
