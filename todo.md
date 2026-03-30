@@ -12,7 +12,7 @@
 - [x] Interactive charts with Recharts (hover, tooltips, zoom, filtering, legends - 42 tests passing)
 - [x] Real-time data from database (WebSocket, polling, auto-refresh, caching - 23 tests passing)
 - [ ] Export to PDF/Excel
-- [ ] Drill-down capability
+- [x] Drill-down capability (breadcrumbs, detail views, back/forward navigation - 19 tests passing)
 - [ ] Marketplace comparison view
 
 ## Data Management
