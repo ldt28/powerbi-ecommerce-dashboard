@@ -10,7 +10,7 @@
 ## Features
 - [x] Date range filtering for all dashboards
 - [x] Interactive charts with Recharts (hover, tooltips, zoom, filtering, legends - 42 tests passing)
-- [ ] Real-time data from database
+- [x] Real-time data from database (WebSocket, polling, auto-refresh, caching - 23 tests passing)
 - [ ] Export to PDF/Excel
 - [ ] Drill-down capability
 - [ ] Marketplace comparison view
