@@ -147,3 +147,14 @@
 - [x] Build connection health monitoring dashboard
 - [x] Add sync status indicators and error tracking
 - [x] Write vitest tests for sync scheduler and health monitoring (34 tests passing)
+
+
+## Platform API Integrations
+- [ ] Set up Google Analytics API client with OAuth2 authentication
+- [ ] Implement Google Analytics data retrieval (sessions, users, revenue, conversions)
+- [ ] Set up Facebook Ads API client with OAuth2 authentication
+- [ ] Implement Facebook Ads data retrieval (impressions, clicks, spend, conversions)
+- [ ] Set up YouTube Analytics API client with OAuth2 authentication
+- [ ] Implement YouTube data retrieval (views, watch time, subscribers, revenue)
+- [ ] Integrate platform APIs into sync scheduler
+- [ ] Write vitest tests for platform API integrations

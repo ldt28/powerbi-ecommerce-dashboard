@@ -1,6 +1,9 @@
 import { getDb } from "./db";
 import { apiConnections, oauth2Tokens } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+import GoogleAnalyticsService from "./integrations/google-analytics-api";
+import FacebookAdsService from "./integrations/facebook-ads-api";
+import YouTubeAnalyticsService from "./integrations/youtube-analytics-api";
 
 /**
  * Data Sync Scheduler Service
@@ -257,13 +260,94 @@ class SyncScheduler {
   }
 
   private async syncGoogleAnalytics(userId: number, token?: any, db?: any): Promise<void> {
-    // Fetch Google Analytics data
-    console.log(`Syncing Google Analytics for user ${userId}`);
+    try {
+      if (!token?.accessToken) {
+        throw new Error("No access token available for Google Analytics");
+      }
+
+      const gaService = new GoogleAnalyticsService(
+        token.accessToken,
+        token.refreshToken
+      );
+
+      // Get property ID from connection
+      const connection = await db
+        .select()
+        .from(apiConnections)
+        .where(eq(apiConnections.userId, userId))
+        .limit(1);
+
+      if (!connection || !connection[0]) {
+        throw new Error("Connection not found");
+      }
+
+      const propertyId = connection[0].credentials?.propertyId;
+      if (!propertyId) {
+        throw new Error("Property ID not found in connection credentials");
+      }
+
+      // Fetch metrics for the last 30 days
+      const endDate = new Date();
+      const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const metrics = await gaService.getMetrics({
+        accessToken: token.accessToken,
+        propertyId,
+        dateRange: {
+          startDate: startDate.toISOString().split("T")[0],
+          endDate: endDate.toISOString().split("T")[0],
+        },
+      });
+
+      console.log(`Successfully synced Google Analytics for user ${userId}:`, metrics);
+    } catch (error) {
+      console.error(`Error syncing Google Analytics for user ${userId}:`, error);
+      throw error;
+    }
   }
 
   private async syncFacebookData(userId: number, token?: any, db?: any): Promise<void> {
-    // Fetch Facebook data
-    console.log(`Syncing Facebook data for user ${userId}`);
+    try {
+      if (!token?.accessToken) {
+        throw new Error("No access token available for Facebook");
+      }
+
+      const fbService = new FacebookAdsService(token.accessToken);
+
+      // Get ad account ID from connection
+      const connection = await db
+        .select()
+        .from(apiConnections)
+        .where(eq(apiConnections.userId, userId))
+        .limit(1);
+
+      if (!connection || !connection[0]) {
+        throw new Error("Connection not found");
+      }
+
+      const adAccountId = connection[0].credentials?.adAccountId;
+      if (!adAccountId) {
+        throw new Error("Ad Account ID not found in connection credentials");
+      }
+
+      // Fetch metrics for the last 30 days
+      const endDate = new Date();
+      const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const metrics = await fbService.getAccountMetrics({
+        accessToken: token.accessToken,
+        adAccountId,
+        dateRange: {
+          startDate: startDate.toISOString().split("T")[0],
+          endDate: endDate.toISOString().split("T")[0],
+        },
+      });
+
+      console.log(`Successfully synced Facebook Ads for user ${userId}:`, metrics);
+    } catch (error) {
+      console.error(`Error syncing Facebook Ads for user ${userId}:`, error);
+      throw error;
+    }
   }
 
   private async syncLinkedInData(userId: number, token?: any, db?: any): Promise<void> {
@@ -277,8 +361,50 @@ class SyncScheduler {
   }
 
   private async syncYouTubeData(userId: number, token?: any, db?: any): Promise<void> {
-    // Fetch YouTube data
-    console.log(`Syncing YouTube data for user ${userId}`);
+    try {
+      if (!token?.accessToken) {
+        throw new Error("No access token available for YouTube");
+      }
+
+      const ytService = new YouTubeAnalyticsService(
+        token.accessToken,
+        token.refreshToken
+      );
+
+      // Get channel ID from connection
+      const connection = await db
+        .select()
+        .from(apiConnections)
+        .where(eq(apiConnections.userId, userId))
+        .limit(1);
+
+      if (!connection || !connection[0]) {
+        throw new Error("Connection not found");
+      }
+
+      const channelId = connection[0].credentials?.channelId;
+      if (!channelId) {
+        throw new Error("Channel ID not found in connection credentials");
+      }
+
+      // Fetch metrics for the last 30 days
+      const endDate = new Date();
+      const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const metrics = await ytService.getChannelMetrics({
+        accessToken: token.accessToken,
+        channelId,
+        dateRange: {
+          startDate: startDate.toISOString().split("T")[0],
+          endDate: endDate.toISOString().split("T")[0],
+        },
+      });
+
+      console.log(`Successfully synced YouTube Analytics for user ${userId}:`, metrics);
+    } catch (error) {
+      console.error(`Error syncing YouTube Analytics for user ${userId}:`, error);
+      throw error;
+    }
   }
 
   private async syncInstagramData(userId: number, token?: any, db?: any): Promise<void> {
