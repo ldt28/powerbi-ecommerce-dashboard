@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getSalesDataByUser, getAdSpendDataByUser, getApiCredentialsByUser, insertSalesData, insertAdSpendData, insertApiCredential, getApiCredentialByMarketplace } from "./db";
 import { TRPCError } from "@trpc/server";
 import { apiConnectionsRouter } from "./routers/api-connections";
+import { adminRouter } from "./routers/admin";
 
 export const appRouter = router({
   system: systemRouter,
@@ -173,6 +174,9 @@ export const appRouter = router({
 
   // API Connections router
   apiConnections: router(apiConnectionsRouter),
+
+  // Admin router
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;

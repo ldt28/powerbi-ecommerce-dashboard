@@ -17,6 +17,11 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  isSuspended: int("isSuspended").default(0).notNull(),
+  suspendedAt: timestamp("suspendedAt"),
+  suspendedReason: text("suspendedReason"),
+  passwordResetToken: varchar("passwordResetToken", { length: 255 }),
+  passwordResetExpiry: timestamp("passwordResetExpiry"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -150,3 +155,16 @@ export const oauth2Tokens = mysqlTable("oauth2_tokens", {
 
 export type OAuth2Token = typeof oauth2Tokens.$inferSelect;
 export type InsertOAuth2Token = typeof oauth2Tokens.$inferInsert;
+
+// Admin Audit Log table for tracking admin actions
+export const adminAuditLog = mysqlTable("admin_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  adminId: int("adminId").notNull(),
+  action: varchar("action", { length: 64 }).notNull(), // SUSPEND_USER, UNSUSPEND_USER, RESET_PASSWORD, CHANGE_ROLE, DELETE_USER
+  targetUserId: int("targetUserId"),
+  details: text("details"), // JSON stringified details
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
+export type InsertAdminAuditLog = typeof adminAuditLog.$inferInsert;
