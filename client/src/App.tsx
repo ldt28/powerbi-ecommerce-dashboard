@@ -16,6 +16,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import AdminDashboard from "./pages/AdminDashboard";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import PlatformConnections from "./pages/PlatformConnections";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/dashboard/*" component={Dashboard} />
       <Route path="/admin/owner" component={AdminDashboard} />
       <Route path="/analytics" component={AnalyticsDashboard} />
+      <Route path="/settings/connections" component={PlatformConnections} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

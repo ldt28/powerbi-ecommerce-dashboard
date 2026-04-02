@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { apiConnectionsRouter } from "./routers/api-connections";
 import { adminRouter } from "./routers/admin";
 import { dashboardAnalyticsRouter } from "./routers/dashboard-analytics";
+import { platformConnectionsRouter } from "./routers/platform-connections";
 
 export const appRouter = router({
   system: systemRouter,
@@ -181,6 +182,9 @@ export const appRouter = router({
 
   // Dashboard Analytics router
   dashboardAnalytics: dashboardAnalyticsRouter,
+
+  // Platform Connections router
+  platformConnections: platformConnectionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

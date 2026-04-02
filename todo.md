@@ -167,3 +167,12 @@
 - [ ] Add real-time sync status indicators and refresh controls
 - [ ] Implement PDF/CSV export functionality
 - [ ] Write comprehensive tests for dashboard features
+
+## Platform Connections UI (In Progress)
+- [ ] Create tRPC procedures for platform connection management
+- [ ] Build platform connection card components with status indicators
+- [ ] Create OAuth flow UI modals for each platform
+- [ ] Build platform connections settings page
+- [ ] Implement connection status monitoring and auto-refresh
+- [ ] Add disconnect confirmation dialogs and error handling
+- [ ] Write comprehensive tests for connection management
