@@ -158,3 +158,12 @@
 - [ ] Implement YouTube data retrieval (views, watch time, subscribers, revenue)
 - [ ] Integrate platform APIs into sync scheduler
 - [ ] Write vitest tests for platform API integrations
+
+## User-Facing Dashboard Features (In Progress)
+- [ ] Create tRPC procedures for dashboard data aggregation and filtering
+- [ ] Build Chart.js visualization components (line, bar, pie charts)
+- [ ] Create main analytics dashboard layout with KPI cards and metrics
+- [ ] Implement date range filter with calendar picker
+- [ ] Add real-time sync status indicators and refresh controls
+- [ ] Implement PDF/CSV export functionality
+- [ ] Write comprehensive tests for dashboard features

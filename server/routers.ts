@@ -7,6 +7,7 @@ import { getSalesDataByUser, getAdSpendDataByUser, getApiCredentialsByUser, inse
 import { TRPCError } from "@trpc/server";
 import { apiConnectionsRouter } from "./routers/api-connections";
 import { adminRouter } from "./routers/admin";
+import { dashboardAnalyticsRouter } from "./routers/dashboard-analytics";
 
 export const appRouter = router({
   system: systemRouter,
@@ -177,6 +178,9 @@ export const appRouter = router({
 
   // Admin router
   admin: adminRouter,
+
+  // Dashboard Analytics router
+  dashboardAnalytics: dashboardAnalyticsRouter,
 });
 
 export type AppRouter = typeof appRouter;
