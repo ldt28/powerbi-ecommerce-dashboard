@@ -36,6 +36,13 @@
       "when": 1775053032845,
       "tag": "0004_wide_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1775139763506,
+      "tag": "0005_exotic_rockslide",
+      "breakpoints": true
     }
   ]
 }

@@ -168,3 +168,98 @@ export const adminAuditLog = mysqlTable("admin_audit_log", {
 
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
 export type InsertAdminAuditLog = typeof adminAuditLog.$inferInsert;
+
+// Team Management table
+export const teams = mysqlTable("teams", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("ownerId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Team = typeof teams.$inferSelect;
+export type InsertTeam = typeof teams.$inferInsert;
+
+// Team Members table
+export const teamMembers = mysqlTable("team_members", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["admin", "editor", "viewer"]).default("viewer").notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  invitedBy: int("invitedBy"),
+  invitedAt: timestamp("invitedAt"),
+  acceptedAt: timestamp("acceptedAt"),
+  status: mysqlEnum("status", ["pending", "accepted", "rejected"]).default("pending").notNull(),
+});
+
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMember = typeof teamMembers.$inferInsert;
+
+// Team Invitations table
+export const teamInvitations = mysqlTable("team_invitations", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  role: mysqlEnum("role", ["admin", "editor", "viewer"]).default("viewer").notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  invitedBy: int("invitedBy").notNull(),
+  invitedAt: timestamp("invitedAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  acceptedAt: timestamp("acceptedAt"),
+  status: mysqlEnum("status", ["pending", "accepted", "expired"]).default("pending").notNull(),
+});
+
+export type TeamInvitation = typeof teamInvitations.$inferSelect;
+export type InsertTeamInvitation = typeof teamInvitations.$inferInsert;
+
+// Activity Log table for tracking team actions
+export const activityLog = mysqlTable("activity_log", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  userId: int("userId").notNull(),
+  action: varchar("action", { length: 64 }).notNull(), // VIEW_DASHBOARD, EDIT_DASHBOARD, EXPORT_DATA, CONNECT_PLATFORM, etc.
+  resourceType: varchar("resourceType", { length: 64 }), // dashboard, report, connection, etc.
+  resourceId: int("resourceId"),
+  details: text("details"), // JSON stringified details
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export type ActivityLog = typeof activityLog.$inferSelect;
+export type InsertActivityLog = typeof activityLog.$inferInsert;
+
+// Shared Dashboards table
+export const sharedDashboards = mysqlTable("shared_dashboards", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  createdBy: int("createdBy").notNull(),
+  config: text("config"), // JSON stringified dashboard configuration
+  isPublic: int("isPublic").default(0).notNull(),
+  viewCount: int("viewCount").default(0).notNull(),
+  lastViewedAt: timestamp("lastViewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SharedDashboard = typeof sharedDashboards.$inferSelect;
+export type InsertSharedDashboard = typeof sharedDashboards.$inferInsert;
+
+// Dashboard Access Control table
+export const dashboardAccess = mysqlTable("dashboard_access", {
+  id: int("id").autoincrement().primaryKey(),
+  dashboardId: int("dashboardId").notNull(),
+  userId: int("userId"),
+  teamId: int("teamId"),
+  role: mysqlEnum("role", ["viewer", "editor", "owner"]).default("viewer").notNull(),
+  grantedBy: int("grantedBy").notNull(),
+  grantedAt: timestamp("grantedAt").defaultNow().notNull(),
+});
+
+export type DashboardAccess = typeof dashboardAccess.$inferSelect;
+export type InsertDashboardAccess = typeof dashboardAccess.$inferInsert;

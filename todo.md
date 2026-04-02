@@ -184,3 +184,12 @@
 - [x] Implement notification system with in-app alerts and email notifications
 - [x] Add notification preferences and management UI
 - [x] Write comprehensive tests for UX features
+
+## Team Management & Collaboration (In Progress)
+- [x] Create team management database schema and tRPC procedures
+- [ ] Build invite team members page with email invitations
+- [ ] Implement role-based access control (admin, editor, viewer)
+- [ ] Create team member management UI with permission editing
+- [ ] Build activity logs showing user actions and changes
+- [ ] Implement shared dashboards with role-based visibility
+- [ ] Write comprehensive tests for team management features

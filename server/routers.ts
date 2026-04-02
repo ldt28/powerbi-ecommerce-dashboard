@@ -9,6 +9,7 @@ import { apiConnectionsRouter } from "./routers/api-connections";
 import { adminRouter } from "./routers/admin";
 import { dashboardAnalyticsRouter } from "./routers/dashboard-analytics";
 import { platformConnectionsRouter } from "./routers/platform-connections";
+import { teamRouter } from "./routers/team";
 
 export const appRouter = router({
   system: systemRouter,
@@ -185,6 +186,9 @@ export const appRouter = router({
 
   // Platform Connections router
   platformConnections: platformConnectionsRouter,
+
+  // Team Management router
+  team: teamRouter,
 });
 
 export type AppRouter = typeof appRouter;
