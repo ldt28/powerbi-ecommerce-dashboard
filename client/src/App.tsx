@@ -17,6 +17,8 @@ import Privacy from "./pages/Privacy";
 import AdminDashboard from "./pages/AdminDashboard";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import PlatformConnections from "./pages/PlatformConnections";
+import Help from "./pages/Help";
+import Settings from "./pages/Settings";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -36,6 +38,8 @@ function Router() {
       <Route path="/admin/owner" component={AdminDashboard} />
       <Route path="/analytics" component={AnalyticsDashboard} />
       <Route path="/settings/connections" component={PlatformConnections} />
+      <Route path="/settings" component={Settings} />
+      <Route path="/help" component={Help} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
