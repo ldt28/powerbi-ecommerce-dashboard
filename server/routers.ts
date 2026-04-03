@@ -10,6 +10,7 @@ import { adminRouter } from "./routers/admin";
 import { dashboardAnalyticsRouter } from "./routers/dashboard-analytics";
 import { platformConnectionsRouter } from "./routers/platform-connections";
 import { teamRouter } from "./routers/team";
+import { advancedAnalyticsRouter } from "./routers/advanced-analytics";
 
 export const appRouter = router({
   system: systemRouter,
@@ -189,6 +190,9 @@ export const appRouter = router({
 
   // Team Management router
   team: teamRouter,
+
+  // Advanced Analytics router
+  advancedAnalytics: advancedAnalyticsRouter,
 });
 
 export type AppRouter = typeof appRouter;

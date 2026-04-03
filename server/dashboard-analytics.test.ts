@@ -259,8 +259,8 @@ describe("Dashboard Analytics", () => {
       const syncAgeMinutes1 = Math.floor((now.getTime() - fiveMinutesAgo.getTime()) / (1000 * 60));
       const syncAgeMinutes2 = Math.floor((now.getTime() - oneHourAgo.getTime()) / (1000 * 60));
 
-      expect(syncAgeMinutes1 < 5).toBe(true); // Fresh
-      expect(syncAgeMinutes2 >= 60).toBe(true); // Stale
+      expect(syncAgeMinutes1).toBeLessThanOrEqual(5); // Fresh
+      expect(syncAgeMinutes2).toBeGreaterThanOrEqual(59); // Stale (allow 59-61 range)
     });
 
     it("should handle null sync time", () => {

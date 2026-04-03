@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, date } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -263,3 +263,125 @@ export const dashboardAccess = mysqlTable("dashboard_access", {
 
 export type DashboardAccess = typeof dashboardAccess.$inferSelect;
 export type InsertDashboardAccess = typeof dashboardAccess.$inferInsert;
+
+// Advanced Analytics Tables
+
+// Anomaly Detection Alerts
+export const anomalyAlerts = mysqlTable("anomaly_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  metricName: varchar("metricName", { length: 128 }).notNull(), // revenue, orders, conversion_rate, etc.
+  anomalyType: mysqlEnum("anomalyType", ["spike", "drop", "trend_change"]).notNull(),
+  severity: mysqlEnum("severity", ["low", "medium", "high"]).default("medium").notNull(),
+  expectedValue: decimal("expectedValue", { precision: 15, scale: 2 }),
+  actualValue: decimal("actualValue", { precision: 15, scale: 2 }).notNull(),
+  deviation: decimal("deviation", { precision: 10, scale: 2 }), // percentage deviation
+  detectedAt: timestamp("detectedAt").defaultNow().notNull(),
+  isResolved: int("isResolved").default(0).notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+  notes: text("notes"),
+});
+
+export type AnomalyAlert = typeof anomalyAlerts.$inferSelect;
+export type InsertAnomalyAlert = typeof anomalyAlerts.$inferInsert;
+
+// Forecasting and Predictions
+export const predictions = mysqlTable("predictions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  metricName: varchar("metricName", { length: 128 }).notNull(),
+  predictionDate: date("predictionDate").notNull(),
+  predictedValue: decimal("predictedValue", { precision: 15, scale: 2 }).notNull(),
+  confidenceInterval: decimal("confidenceInterval", { precision: 5, scale: 2 }), // 95%, 90%, etc.
+  lowerBound: decimal("lowerBound", { precision: 15, scale: 2 }),
+  upperBound: decimal("upperBound", { precision: 15, scale: 2 }),
+  modelType: varchar("modelType", { length: 64 }), // linear, exponential, arima, etc.
+  accuracy: decimal("accuracy", { precision: 5, scale: 2 }), // model accuracy percentage
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Prediction = typeof predictions.$inferSelect;
+export type InsertPrediction = typeof predictions.$inferInsert;
+
+// Cohort Analysis
+export const cohorts = mysqlTable("cohorts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  cohortName: varchar("cohortName", { length: 255 }).notNull(),
+  cohortType: mysqlEnum("cohortType", ["acquisition_date", "first_purchase_value", "geographic", "demographic", "behavioral"]).notNull(),
+  startDate: date("startDate").notNull(),
+  endDate: date("endDate"),
+  memberCount: int("memberCount").default(0).notNull(),
+  retentionRate: decimal("retentionRate", { precision: 5, scale: 2 }), // percentage
+  avgLifetimeValue: decimal("avgLifetimeValue", { precision: 15, scale: 2 }),
+  avgRepeatPurchases: decimal("avgRepeatPurchases", { precision: 10, scale: 2 }),
+  churnRate: decimal("churnRate", { precision: 5, scale: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Cohort = typeof cohorts.$inferSelect;
+export type InsertCohort = typeof cohorts.$inferInsert;
+
+// Customer Journey Events (for funnel and journey tracking)
+export const customerJourneyEvents = mysqlTable("customer_journey_events", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  customerId: varchar("customerId", { length: 255 }).notNull(),
+  eventType: varchar("eventType", { length: 64 }).notNull(), // view, add_to_cart, checkout, purchase, etc.
+  eventName: varchar("eventName", { length: 255 }).notNull(),
+  eventValue: decimal("eventValue", { precision: 15, scale: 2 }),
+  source: varchar("source", { length: 64 }), // organic, paid, direct, referral, etc.
+  medium: varchar("medium", { length: 64 }), // email, cpc, social, etc.
+  campaign: varchar("campaign", { length: 255 }),
+  deviceType: varchar("deviceType", { length: 64 }), // mobile, desktop, tablet
+  country: varchar("country", { length: 64 }),
+  sessionId: varchar("sessionId", { length: 255 }),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  metadata: text("metadata"), // JSON stringified additional data
+});
+
+export type CustomerJourneyEvent = typeof customerJourneyEvents.$inferSelect;
+export type InsertCustomerJourneyEvent = typeof customerJourneyEvents.$inferInsert;
+
+// Attribution Models (stores attribution results)
+export const attributionModels = mysqlTable("attribution_models", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  conversionId: varchar("conversionId", { length: 255 }).notNull(),
+  customerId: varchar("customerId", { length: 255 }).notNull(),
+  modelType: mysqlEnum("modelType", ["first_touch", "last_touch", "linear", "time_decay", "position_based"]).notNull(),
+  touchpointCount: int("touchpointCount").default(0).notNull(),
+  conversionValue: decimal("conversionValue", { precision: 15, scale: 2 }).notNull(),
+  attributedValue: decimal("attributedValue", { precision: 15, scale: 2 }), // value attributed to this conversion
+  touchpoints: text("touchpoints"), // JSON array of touchpoint details
+  firstTouchSource: varchar("firstTouchSource", { length: 64 }),
+  lastTouchSource: varchar("lastTouchSource", { length: 64 }),
+  journeyLength: int("journeyLength").default(0).notNull(), // days from first to last touch
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AttributionModel = typeof attributionModels.$inferSelect;
+export type InsertAttributionModel = typeof attributionModels.$inferInsert;
+
+// Funnel Analysis
+export const funnelAnalysis = mysqlTable("funnel_analysis", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  funnelName: varchar("funnelName", { length: 255 }).notNull(),
+  funnelSteps: text("funnelSteps").notNull(), // JSON array of step names
+  totalSessions: int("totalSessions").default(0).notNull(),
+  step1Count: int("step1Count").default(0).notNull(),
+  step2Count: int("step2Count").default(0).notNull(),
+  step3Count: int("step3Count").default(0).notNull(),
+  step4Count: int("step4Count").default(0).notNull(),
+  step5Count: int("step5Count").default(0).notNull(),
+  conversionRate: decimal("conversionRate", { precision: 5, scale: 2 }), // overall conversion percentage
+  dropoffRate: decimal("dropoffRate", { precision: 5, scale: 2 }), // overall dropoff percentage
+  avgTimeInFunnel: int("avgTimeInFunnel"), // seconds
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FunnelAnalysis = typeof funnelAnalysis.$inferSelect;
+export type InsertFunnelAnalysis = typeof funnelAnalysis.$inferInsert;

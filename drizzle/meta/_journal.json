@@ -43,6 +43,13 @@
       "when": 1775139763506,
       "tag": "0005_exotic_rockslide",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1775231863796,
+      "tag": "0006_good_rogue",
+      "breakpoints": true
     }
   ]
 }
