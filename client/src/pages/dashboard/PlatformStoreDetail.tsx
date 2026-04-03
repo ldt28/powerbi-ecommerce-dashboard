@@ -1,7 +1,8 @@
 import { useRoute, Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, ShoppingCart, DollarSign, AlertCircle } from "lucide-react";
+import { ArrowLeft, TrendingUp, ShoppingCart, DollarSign, AlertCircle, Package, Users, RotateCcw, Percent, Gift } from "lucide-react";
+import { MetricCard } from "@/components/MetricCard";
 import {
   LineChart,
   Line,
@@ -299,59 +300,137 @@ export default function PlatformStoreDetail() {
           <p className="text-muted-foreground">Detailed analytics and metrics for {store.name}</p>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                Total Revenue
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${(store.totalRevenue / 1000).toFixed(1)}K</div>
-              <p className="text-xs text-muted-foreground mt-1">Last 6 months</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4" />
-                Total Orders
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{store.orders.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground mt-1">Last 6 months</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Avg Order Value
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${store.aov.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Average per order</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Conversion Rate
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{store.conversionRate.toFixed(1)}%</div>
-              <p className="text-xs text-muted-foreground mt-1">Platform average</p>
-            </CardContent>
-          </Card>
+        {/* 14 Ecommerce Metrics */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4">Key Metrics</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title="Gross Revenue"
+              value={store.totalRevenue}
+              unit="USD"
+              format="currency"
+              color="blue"
+              icon={<DollarSign className="w-4 h-4" />}
+              trend={5.2}
+              trendLabel="last month"
+            />
+            <MetricCard
+              title="Gross ADV"
+              value={Math.round(store.totalRevenue * 0.15)}
+              unit="USD"
+              format="currency"
+              color="green"
+              icon={<TrendingUp className="w-4 h-4" />}
+              trend={2.1}
+              trendLabel="last month"
+            />
+            <MetricCard
+              title="Average Order Value"
+              value={store.aov}
+              unit="USD"
+              format="currency"
+              color="purple"
+              icon={<ShoppingCart className="w-4 h-4" />}
+            />
+            <MetricCard
+              title="Total Sales"
+              value={store.orders}
+              unit="orders"
+              format="number"
+              color="blue"
+              icon={<ShoppingCart className="w-4 h-4" />}
+              trend={3.5}
+              trendLabel="last month"
+            />
+            <MetricCard
+              title="Discounts"
+              value={Math.round(store.totalRevenue * 0.08)}
+              unit="USD"
+              format="currency"
+              color="orange"
+              icon={<Gift className="w-4 h-4" />}
+            />
+            <MetricCard
+              title="Gross Sales"
+              value={Math.round(store.totalRevenue * 1.08)}
+              unit="USD"
+              format="currency"
+              color="green"
+              icon={<DollarSign className="w-4 h-4" />}
+            />
+            <MetricCard
+              title="New Customer Orders"
+              value={Math.round(store.orders * 0.25)}
+              unit="orders"
+              format="number"
+              color="blue"
+              icon={<Users className="w-4 h-4" />}
+              trend={8.3}
+              trendLabel="last month"
+            />
+            <MetricCard
+              title="New Customer Revenue"
+              value={Math.round(store.totalRevenue * 0.25)}
+              unit="USD"
+              format="currency"
+              color="green"
+              icon={<DollarSign className="w-4 h-4" />}
+            />
+            <MetricCard
+              title="New Customers"
+              value={Math.round(store.orders * 0.15)}
+              unit="customers"
+              format="number"
+              color="purple"
+              icon={<Users className="w-4 h-4" />}
+            />
+            <MetricCard
+              title="Returns"
+              value={Math.round(store.orders * store.returnRate / 100)}
+              unit="orders"
+              format="number"
+              color="red"
+              icon={<RotateCcw className="w-4 h-4" />}
+              trend={-1.2}
+              trendLabel="last month"
+            />
+            <MetricCard
+              title="Sales Taxes"
+              value={Math.round(store.totalRevenue * 0.08)}
+              unit="USD"
+              format="currency"
+              color="yellow"
+              icon={<Percent className="w-4 h-4" />}
+            />
+            <MetricCard
+              title="Units Sold"
+              value={Math.round(store.orders * 1.5)}
+              unit="units"
+              format="number"
+              color="blue"
+              icon={<Package className="w-4 h-4" />}
+              trend={4.7}
+              trendLabel="last month"
+            />
+            <MetricCard
+              title="Returning Customer Revenue"
+              value={Math.round(store.totalRevenue * 0.65)}
+              unit="USD"
+              format="currency"
+              color="green"
+              icon={<DollarSign className="w-4 h-4" />}
+              trend={6.1}
+              trendLabel="last month"
+            />
+            <MetricCard
+              title="Orders > $0 Revenue"
+              value={store.orders}
+              unit="orders"
+              format="number"
+              color="blue"
+              icon={<ShoppingCart className="w-4 h-4" />}
+            />
+          </div>
         </div>
 
         {/* Charts */}
@@ -402,56 +481,25 @@ export default function PlatformStoreDetail() {
         {/* Top Products */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Top Products</CardTitle>
-            <CardDescription>Best performing products on {store.name}</CardDescription>
+            <CardTitle>Top Products by Revenue</CardTitle>
+            <CardDescription>Best performing products</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={store.topProducts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                <Legend />
-                <Bar dataKey="revenue" fill="#3b82f6" name="Revenue ($)" />
-                <Bar dataKey="orders" fill="#10b981" name="Orders" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="space-y-4">
+              {store.topProducts.map((product: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{product.name}</p>
+                    <p className="text-sm text-muted-foreground">{product.orders} orders</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold">${(product.revenue / 1000).toFixed(1)}K</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
-
-        {/* Performance Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Platform Rating</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-yellow-500">{store.rating.toFixed(1)} ⭐</div>
-              <p className="text-xs text-muted-foreground mt-1">Customer satisfaction</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Return Rate</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-red-500">{store.returnRate.toFixed(1)}%</div>
-              <p className="text-xs text-muted-foreground mt-1">Product returns</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Performance Score</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-500">{(store.rating * 20).toFixed(0)}/100</div>
-              <p className="text-xs text-muted-foreground mt-1">Overall performance</p>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import { platformConnectionsRouter } from "./routers/platform-connections";
 import { teamRouter } from "./routers/team";
 import { advancedAnalyticsRouter } from "./routers/advanced-analytics";
 import { dashboardCustomizationRouter } from "./routers/dashboard-customization";
+import { webstoreMetricsRouter } from "./routers/webstore-metrics";
 
 export const appRouter = router({
   system: systemRouter,
@@ -197,6 +198,9 @@ export const appRouter = router({
 
   // Dashboard Customization router
   dashboardCustomization: dashboardCustomizationRouter,
+
+  // Webstore Metrics router
+  webstoreMetrics: webstoreMetricsRouter,
 });
 
 export type AppRouter = typeof appRouter;
