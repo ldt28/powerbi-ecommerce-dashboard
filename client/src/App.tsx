@@ -14,9 +14,10 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
-import AdminDashboard from "./pages/AdminDashboard";
-import AnalyticsDashboard from "./pages/AnalyticsDashboard";
-import PlatformConnections from "./pages/PlatformConnections";
+import AdminDashboard from "@/pages/AdminDashboard";
+import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
+import PlatformConnections from "@/pages/PlatformConnections";
+import CustomizableDashboard from "@/pages/CustomizableDashboard";
 import Help from "./pages/Help";
 import Settings from "./pages/Settings";
 
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/admin/owner" component={AdminDashboard} />
       <Route path="/analytics" component={AnalyticsDashboard} />
       <Route path="/settings/connections" component={PlatformConnections} />
+      <Route path="/dashboard/customize" component={CustomizableDashboard} />
       <Route path="/settings" component={Settings} />
       <Route path="/help" component={Help} />
       <Route path={"/404"} component={NotFound} />

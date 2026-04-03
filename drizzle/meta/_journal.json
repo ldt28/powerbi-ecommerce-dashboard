@@ -50,6 +50,13 @@
       "when": 1775231863796,
       "tag": "0006_good_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1775232566472,
+      "tag": "0007_bizarre_onslaught",
+      "breakpoints": true
     }
   ]
 }

@@ -385,3 +385,116 @@ export const funnelAnalysis = mysqlTable("funnel_analysis", {
 
 export type FunnelAnalysis = typeof funnelAnalysis.$inferSelect;
 export type InsertFunnelAnalysis = typeof funnelAnalysis.$inferInsert;
+
+
+// Dashboard Customization Tables
+
+// Dashboard Configurations (stores user's dashboard layout and settings)
+export const dashboardConfigs = mysqlTable("dashboard_configs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  configName: varchar("configName", { length: 255 }).notNull(), // e.g., "Sales Dashboard", "Marketing Dashboard"
+  isDefault: int("isDefault").default(0).notNull(),
+  layout: text("layout").notNull(), // JSON: { columns: 3, gap: 16, responsive: true }
+  metrics: text("metrics").notNull(), // JSON array of metric IDs and their order
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DashboardConfig = typeof dashboardConfigs.$inferSelect;
+export type InsertDashboardConfig = typeof dashboardConfigs.$inferInsert;
+
+// Metric Cards (stores customization for individual metric cards)
+export const metricCards = mysqlTable("metric_cards", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  configId: int("configId").notNull(), // references dashboardConfigs
+  metricKey: varchar("metricKey", { length: 255 }).notNull(), // e.g., "total_revenue", "orders"
+  metricName: varchar("metricName", { length: 255 }).notNull(),
+  isVisible: int("isVisible").default(1).notNull(),
+  cardColor: varchar("cardColor", { length: 7 }).default("#ffffff").notNull(), // hex color
+  backgroundColor: varchar("backgroundColor", { length: 7 }).default("#f5f5f5").notNull(),
+  textColor: varchar("textColor", { length: 7 }).default("#000000").notNull(),
+  cardSize: mysqlEnum("cardSize", ["small", "medium", "large"]).default("medium").notNull(),
+  showTrend: int("showTrend").default(1).notNull(),
+  showComparison: int("showComparison").default(0).notNull(),
+  comparisonPeriod: mysqlEnum("comparisonPeriod", ["day", "week", "month", "quarter", "year"]).default("month"),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MetricCard = typeof metricCards.$inferSelect;
+export type InsertMetricCard = typeof metricCards.$inferInsert;
+
+// Metric Filters (stores calculation customization like date ranges, filters)
+export const metricFilters = mysqlTable("metric_filters", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  metricCardId: int("metricCardId").notNull(), // references metricCards
+  filterType: mysqlEnum("filterType", ["date_range", "category", "region", "product", "custom"]).notNull(),
+  filterValue: text("filterValue").notNull(), // JSON: { startDate, endDate } or array of values
+  isActive: int("isActive").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MetricFilter = typeof metricFilters.$inferSelect;
+export type InsertMetricFilter = typeof metricFilters.$inferInsert;
+
+// Metric Thresholds (stores alert thresholds and targets)
+export const metricThresholds = mysqlTable("metric_thresholds", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  metricCardId: int("metricCardId").notNull(), // references metricCards
+  targetValue: decimal("targetValue", { precision: 15, scale: 2 }),
+  warningThreshold: decimal("warningThreshold", { precision: 15, scale: 2 }), // yellow alert
+  criticalThreshold: decimal("criticalThreshold", { precision: 15, scale: 2 }), // red alert
+  thresholdType: mysqlEnum("thresholdType", ["above", "below", "range"]).default("above").notNull(),
+  alertEnabled: int("alertEnabled").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MetricThreshold = typeof metricThresholds.$inferSelect;
+export type InsertMetricThreshold = typeof metricThresholds.$inferInsert;
+
+// Dashboard Templates (pre-built configurations users can save/load)
+export const dashboardTemplates = mysqlTable("dashboard_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  templateName: varchar("templateName", { length: 255 }).notNull(),
+  templateDescription: text("templateDescription"),
+  templateConfig: text("templateConfig").notNull(), // JSON: full dashboard configuration
+  isPublic: int("isPublic").default(0).notNull(), // can be shared with team
+  usageCount: int("usageCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DashboardTemplate = typeof dashboardTemplates.$inferSelect;
+export type InsertDashboardTemplate = typeof dashboardTemplates.$inferInsert;
+
+// Dashboard Export History (tracks exports for audit and recovery)
+export const dashboardExports = mysqlTable("dashboard_exports", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  configId: int("configId").notNull(), // references dashboardConfigs
+  exportFormat: mysqlEnum("exportFormat", ["csv", "pdf", "json"]).notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  fileSize: int("fileSize"), // bytes
+  fileUrl: text("fileUrl"), // S3 URL
+  exportedAt: timestamp("exportedAt").defaultNow().notNull(),
+});
+export type DashboardExport = typeof dashboardExports.$inferSelect;
+export type InsertDashboardExport = typeof dashboardExports.$inferInsert;
+
+// Dashboard Alerts (triggered when thresholds are breached)
+export const dashboardAlerts = mysqlTable("dashboard_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  metricCardId: int("metricCardId").notNull(), // references metricCards
+  alertType: mysqlEnum("alertType", ["warning", "critical"]).notNull(),
+  currentValue: decimal("currentValue", { precision: 15, scale: 2 }).notNull(),
+  thresholdValue: decimal("thresholdValue", { precision: 15, scale: 2 }).notNull(),
+  message: text("message"),
+  isResolved: int("isResolved").default(0).notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DashboardAlert = typeof dashboardAlerts.$inferSelect;
+export type InsertDashboardAlert = typeof dashboardAlerts.$inferInsert;
