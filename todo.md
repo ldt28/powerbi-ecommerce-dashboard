@@ -225,3 +225,7 @@
 - [x] Add date range filters and comparison periods
 - [x] Implement real-time data refresh and sync status
 - [x] Write tests for metric calculations
+
+## Bug Fixes (Completed)
+- [x] Create demo/test user for development auto-login
+- [x] Fix dashboard 404 error by implementing dev authentication

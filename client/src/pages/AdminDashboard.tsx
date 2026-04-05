@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -23,8 +23,8 @@ export default function AdminDashboard() {
   // Check if user is owner
   useEffect(() => {
     if (!authLoading && user) {
-      // Check if user is the owner
-      const isOwnerUser = user.openId === process.env.VITE_OWNER_OPEN_ID;
+      // Check if user is the owner by checking role
+      const isOwnerUser = user.role === 'admin';
       setIsOwner(isOwnerUser);
 
       if (!isOwnerUser) {
