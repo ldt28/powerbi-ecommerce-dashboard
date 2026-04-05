@@ -229,3 +229,22 @@
 ## Bug Fixes (Completed)
 - [x] Create demo/test user for development auto-login
 - [x] Fix dashboard 404 error by implementing dev authentication
+
+
+## Export to PDF/Excel (Completed)
+- [x] Create export utility functions for PDF generation
+- [x] Create export utility functions for Excel generation
+- [x] Add tRPC procedures for export data preparation
+- [x] Create ExportButton component for all dashboard pages
+- [x] Write comprehensive tests for export functionality
+
+## Marketplace Comparison View (Completed)
+- [x] Create tRPC procedures for marketplace metrics aggregation
+- [x] Create tRPC procedures for platform comparison data
+- [x] Build MarketplaceComparison.tsx component
+- [x] Add comparison charts (revenue, orders, conversion rate)
+- [x] Add trend analysis with 30-day data
+- [x] Add top/bottom performers section
+- [x] Add comparison table with all metrics
+- [x] Integrate into dashboard navigation at /marketplace-comparison
+- [x] Write comprehensive tests for marketplace comparison (17 tests passing)

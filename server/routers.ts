@@ -13,6 +13,8 @@ import { teamRouter } from "./routers/team";
 import { advancedAnalyticsRouter } from "./routers/advanced-analytics";
 import { dashboardCustomizationRouter } from "./routers/dashboard-customization";
 import { webstoreMetricsRouter } from "./routers/webstore-metrics";
+import { exportRouter } from "./routers/export";
+import { marketplaceComparisonRouter } from "./routers/marketplace-comparison";
 
 export const appRouter = router({
   system: systemRouter,
@@ -201,6 +203,10 @@ export const appRouter = router({
 
   // Webstore Metrics router
   webstoreMetrics: webstoreMetricsRouter,
+  // Export router
+  export: exportRouter,
+  // Marketplace Comparison router
+  marketplaceComparison: marketplaceComparisonRouter,
 });
 
 export type AppRouter = typeof appRouter;

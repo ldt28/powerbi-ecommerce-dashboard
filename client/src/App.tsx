@@ -20,6 +20,7 @@ import PlatformConnections from "@/pages/PlatformConnections";
 import CustomizableDashboard from "@/pages/CustomizableDashboard";
 import Help from "./pages/Help";
 import Settings from "./pages/Settings";
+import MarketplaceComparison from "./pages/MarketplaceComparison";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/dashboard/customize" component={CustomizableDashboard} />
       <Route path="/settings" component={Settings} />
       <Route path="/help" component={Help} />
+      <Route path="/marketplace-comparison" component={MarketplaceComparison} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
