@@ -1,7 +1,7 @@
 import { useRoute, Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, ShoppingCart, DollarSign, AlertCircle, Package, Users, RotateCcw, Percent, Gift } from "lucide-react";
+import { ArrowLeft, TrendingUp, ShoppingCart, DollarSign, AlertCircle, Package, Users, RotateCcw, Percent, Gift, Zap, Target } from "lucide-react";
 import { MetricCard } from "@/components/MetricCard";
 import {
   LineChart,
@@ -29,6 +29,13 @@ const storeData: Record<string, any> = {
     conversionRate: 3.2,
     rating: 4.8,
     returnRate: 1.8,
+    amazonAds: {
+      roas: 4.2,
+      cpc: 0.85,
+      clicks: 18500,
+      tacos: 22.5,
+      adConversionValue: 65400,
+    },
     monthlyTrend: [
       { month: "Jan", revenue: 12000, orders: 240 },
       { month: "Feb", revenue: 13500, orders: 270 },
@@ -432,6 +439,78 @@ export default function PlatformStoreDetail() {
             />
           </div>
         </div>
+
+        {/* Amazon Ads Metrics - Only for Amazon store */}
+        {storeName === 'amazon' && store.amazonAds && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-500" />
+              Amazon Ads
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <MetricCard
+                title="Ads ROAS"
+                value={store.amazonAds.roas}
+                unit="x"
+                format="number"
+                color="yellow"
+                icon={<Target className="w-4 h-4" />}
+                trend={2.3}
+                trendLabel="last month"
+              />
+              <MetricCard
+                title="ROAS"
+                value={store.amazonAds.roas}
+                unit="x"
+                format="number"
+                color="yellow"
+                icon={<TrendingUp className="w-4 h-4" />}
+                trend={1.8}
+                trendLabel="last month"
+              />
+              <MetricCard
+                title="CPC"
+                value={store.amazonAds.cpc}
+                unit="USD"
+                format="currency"
+                color="orange"
+                icon={<DollarSign className="w-4 h-4" />}
+                trend={-0.5}
+                trendLabel="last month"
+              />
+              <MetricCard
+                title="Clicks"
+                value={store.amazonAds.clicks}
+                unit="clicks"
+                format="number"
+                color="blue"
+                icon={<Zap className="w-4 h-4" />}
+                trend={5.2}
+                trendLabel="last month"
+              />
+              <MetricCard
+                title="TACoS"
+                value={store.amazonAds.tacos}
+                unit="%"
+                format="percent"
+                color="red"
+                icon={<Percent className="w-4 h-4" />}
+                trend={-1.3}
+                trendLabel="last month"
+              />
+              <MetricCard
+                title="Ad Conversion Value"
+                value={store.amazonAds.adConversionValue}
+                unit="USD"
+                format="currency"
+                color="green"
+                icon={<DollarSign className="w-4 h-4" />}
+                trend={4.7}
+                trendLabel="last month"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
