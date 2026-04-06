@@ -310,6 +310,219 @@ export const marketplaceComparisonRouter = router({
     }),
 
   /**
+   * Get period-over-period comparison
+   */
+  getPeriodComparison: protectedProcedure
+    .input(
+      z.object({
+        period: z.enum(["month", "quarter", "year"]).optional().default("month"),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        // Generate sample period comparison data
+        const currentPeriod = {
+          amazon: { revenue: 156000, orders: 3120, conversionRate: 3.2, aov: 50 },
+          ebay: { revenue: 98500, orders: 2100, conversionRate: 2.8, aov: 47 },
+          walmart: { revenue: 142000, orders: 2840, conversionRate: 3.5, aov: 50 },
+          webstores: { revenue: 89200, orders: 1780, conversionRate: 2.9, aov: 50 },
+          tractorSupply: { revenue: 125600, orders: 2512, conversionRate: 3.1, aov: 50 },
+          autozone: { revenue: 112400, orders: 2248, conversionRate: 3.0, aov: 50 },
+          northernTool: { revenue: 98800, orders: 1976, conversionRate: 2.7, aov: 50 },
+          lowes: { revenue: 134200, orders: 2684, conversionRate: 3.3, aov: 50 },
+        };
+
+        const previousPeriod = {
+          amazon: { revenue: 132000, orders: 2640, conversionRate: 3.0, aov: 50 },
+          ebay: { revenue: 89200, orders: 1890, conversionRate: 2.6, aov: 47 },
+          walmart: { revenue: 118500, orders: 2370, conversionRate: 3.2, aov: 50 },
+          webstores: { revenue: 75800, orders: 1516, conversionRate: 2.7, aov: 50 },
+          tractorSupply: { revenue: 108200, orders: 2164, conversionRate: 2.9, aov: 50 },
+          autozone: { revenue: 98600, orders: 1972, conversionRate: 2.8, aov: 50 },
+          northernTool: { revenue: 82400, orders: 1648, conversionRate: 2.5, aov: 50 },
+          lowes: { revenue: 115800, orders: 2316, conversionRate: 3.1, aov: 50 },
+        };
+
+        return {
+          currentPeriod,
+          previousPeriod,
+          periodType: input.period,
+        };
+      } catch (error) {
+        console.error("Error fetching period comparison:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch period comparison",
+        });
+      }
+    }),
+
+  /**
+   * Get growth metrics for all platforms
+   */
+  getGrowthMetrics: protectedProcedure
+    .input(
+      z.object({
+        period: z.enum(["month", "quarter", "year"]).optional().default("month"),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        // Calculate growth metrics
+        const growthMetrics = [
+          {
+            platform: "Amazon",
+            currentRevenue: 156000,
+            previousRevenue: 132000,
+            growthRate: 24000,
+            growthPercent: "+18.2%",
+            trend: "up" as const,
+            trendStrength: "strong" as const,
+          },
+          {
+            platform: "Walmart",
+            currentRevenue: 142000,
+            previousRevenue: 118500,
+            growthRate: 23500,
+            growthPercent: "+19.8%",
+            trend: "up" as const,
+            trendStrength: "strong" as const,
+          },
+          {
+            platform: "Lowe's",
+            currentRevenue: 134200,
+            previousRevenue: 115800,
+            growthRate: 18400,
+            growthPercent: "+15.9%",
+            trend: "up" as const,
+            trendStrength: "moderate" as const,
+          },
+          {
+            platform: "Tractor Supply",
+            currentRevenue: 125600,
+            previousRevenue: 108200,
+            growthRate: 17400,
+            growthPercent: "+16.1%",
+            trend: "up" as const,
+            trendStrength: "moderate" as const,
+          },
+          {
+            platform: "AutoZone",
+            currentRevenue: 112400,
+            previousRevenue: 98600,
+            growthRate: 13800,
+            growthPercent: "+14.0%",
+            trend: "up" as const,
+            trendStrength: "moderate" as const,
+          },
+          {
+            platform: "eBay",
+            currentRevenue: 98500,
+            previousRevenue: 89200,
+            growthRate: 9300,
+            growthPercent: "+10.4%",
+            trend: "up" as const,
+            trendStrength: "weak" as const,
+          },
+          {
+            platform: "Northern Tool",
+            currentRevenue: 98800,
+            previousRevenue: 82400,
+            growthRate: 16400,
+            growthPercent: "+19.9%",
+            trend: "up" as const,
+            trendStrength: "strong" as const,
+          },
+          {
+            platform: "WebStores",
+            currentRevenue: 89200,
+            previousRevenue: 75800,
+            growthRate: 13400,
+            growthPercent: "+17.7%",
+            trend: "up" as const,
+            trendStrength: "moderate" as const,
+          },
+        ];
+
+        const avgGrowth = growthMetrics.reduce((sum, m) => sum + parseFloat(m.growthPercent.replace("%", "")), 0) / growthMetrics.length;
+        const topGrower = growthMetrics.reduce((max, m) => (parseFloat(m.growthPercent) > parseFloat(max.growthPercent) ? m : max));
+        const topDecliner = growthMetrics.reduce((min, m) => (parseFloat(m.growthPercent) < parseFloat(min.growthPercent) ? m : min));
+
+        return {
+          metrics: growthMetrics,
+          summary: {
+            avgGrowthPercent: `+${avgGrowth.toFixed(1)}%`,
+            topGrower: topGrower.platform,
+            topGrowerPercent: topGrower.growthPercent,
+            topDecliner: topDecliner.platform,
+            topDeclinerPercent: topDecliner.growthPercent,
+          },
+        };
+      } catch (error) {
+        console.error("Error fetching growth metrics:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch growth metrics",
+        });
+      }
+    }),
+
+  /**
+   * Get predictive trend data
+   */
+  getPredictiveTrends: protectedProcedure
+    .input(
+      z.object({
+        platform: z.string(),
+        forecastDays: z.number().optional().default(30),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        // Generate historical data
+        const historical = Array.from({ length: 30 }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (30 - i));
+          const baseValue = 5000;
+          const trend = i * 50;
+          const noise = Math.random() * 500 - 250;
+          return {
+            date: date.toISOString().split("T")[0],
+            value: baseValue + trend + noise,
+          };
+        });
+
+        // Generate predictive data (simple linear projection)
+        const predictive = Array.from({ length: input.forecastDays }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() + i + 1);
+          const lastValue = historical[historical.length - 1].value;
+          const trend = (i + 1) * 50;
+          const predicted = lastValue + trend;
+          return {
+            date: date.toISOString().split("T")[0],
+            actual: lastValue,
+            predicted: predicted,
+            confidence: 0.85 - i * 0.01, // Confidence decreases over time
+          };
+        });
+
+        return {
+          platform: input.platform,
+          historical,
+          predictive,
+          confidence: 0.85,
+        };
+      } catch (error) {
+        console.error("Error fetching predictive trends:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch predictive trends",
+        });
+      }
+    }),
+
+  /**
    * Get trend data for marketplace comparison
    */
   getMarketplaceTrends: protectedProcedure
