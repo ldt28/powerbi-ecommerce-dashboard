@@ -498,3 +498,25 @@ export const dashboardAlerts = mysqlTable("dashboard_alerts", {
 });
 export type DashboardAlert = typeof dashboardAlerts.$inferSelect;
 export type InsertDashboardAlert = typeof dashboardAlerts.$inferInsert;
+
+
+// Export Schedules (recurring data exports)
+export const exportSchedules = mysqlTable("export_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  format: mysqlEnum("format", ["csv", "excel", "pdf"]).notNull(),
+  frequency: mysqlEnum("frequency", ["daily", "weekly", "monthly"]).notNull(),
+  dayOfWeek: int("dayOfWeek"), // 0-6 for weekly
+  dayOfMonth: int("dayOfMonth"), // 1-31 for monthly
+  time: varchar("time", { length: 5 }).notNull(), // HH:mm format
+  emailRecipients: text("emailRecipients").notNull(), // JSON array
+  includeMetrics: text("includeMetrics").notNull(), // JSON array
+  isActive: int("isActive").default(1).notNull(),
+  lastRunAt: timestamp("lastRunAt"),
+  nextRunAt: timestamp("nextRunAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ExportSchedule = typeof exportSchedules.$inferSelect;
+export type InsertExportSchedule = typeof exportSchedules.$inferInsert;

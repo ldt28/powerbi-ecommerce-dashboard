@@ -15,6 +15,7 @@ import { dashboardCustomizationRouter } from "./routers/dashboard-customization"
 import { webstoreMetricsRouter } from "./routers/webstore-metrics";
 import { exportRouter } from "./routers/export";
 import { marketplaceComparisonRouter } from "./routers/marketplace-comparison";
+import { exportSchedulingRouter } from "./routers/export-scheduling";
 
 export const appRouter = router({
   system: systemRouter,
@@ -205,6 +206,8 @@ export const appRouter = router({
   webstoreMetrics: webstoreMetricsRouter,
   // Export router
   export: exportRouter,
+  // Export Scheduling router
+  exportScheduling: exportSchedulingRouter,
   // Marketplace Comparison router
   marketplaceComparison: marketplaceComparisonRouter,
 });
