@@ -260,3 +260,13 @@
 - [x] Add predictive trend lines to revenue/orders charts
 - [x] Create period-over-period comparison table
 - [x] Write comprehensive tests for new features (798 tests passing)
+
+
+## Anomaly Detection System (Completed)
+- [x] Create anomaly detection algorithms and statistical utilities (Z-score, IQR, MAD, Trend, Seasonal, Ensemble)
+- [x] Build database schema for alerts and anomaly history (anomalyConfigs, anomalies, alertRules, alertHistory, inAppNotifications, anomalyStats)
+- [x] Create tRPC procedures for anomaly detection and alert management
+- [x] Build alert configuration UI and threshold settings
+- [x] Create anomaly detection dashboard with real-time monitoring
+- [x] Implement email and in-app notification system
+- [x] Write comprehensive tests for anomaly detection (798 tests passing)
