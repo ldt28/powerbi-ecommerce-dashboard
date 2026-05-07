@@ -304,3 +304,14 @@
 - [x] Build activity logs showing user actions and changes - ActivityLogs.tsx
 - [x] Implement shared dashboards with role-based visibility - sharedDashboards schema
 - [x] Write comprehensive tests for team management features (40+ tests for RBAC)
+
+
+## Notification Integrations (Completed)
+- [x] Email notification templates - 5 reusable templates (teamInvite, anomalyAlert, dailyReport, exportReady, roleChanged)
+- [x] Slack integration for alerts - sendSlackNotification with formatted messages
+- [x] Discord webhook integration - sendDiscordNotification with embeds
+- [x] SMS notifications (Twilio) - sendSMS with credential management
+- [x] Push notifications for mobile - FCM integration with batch sending
+- [x] Notification settings UI page at /notification-settings
+- [x] tRPC procedures for all notification channels
+- [x] Comprehensive tests for all notification types (30+ tests)
