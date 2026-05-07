@@ -24,6 +24,9 @@ import MarketplaceComparison from "./pages/MarketplaceComparison";
 import { CommandPalette } from "@/components/CommandPalette";
 import TeamManagement from "./pages/TeamManagement";
 import SearchAndFilters from "./pages/SearchAndFilters";
+import InviteTeamMembers from "./pages/InviteTeamMembers";
+import ActivityLogs from "./pages/ActivityLogs";
+import Team from "./pages/Team";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -48,7 +51,10 @@ function Router() {
       <Route path="/help" component={Help} />
       <Route path="/marketplace-comparison" component={MarketplaceComparison} />
       <Route path="/team-management" component={TeamManagement} />
+      <Route path="/team" component={Team} />
       <Route path="/search-filters" component={SearchAndFilters} />
+      <Route path="/invite-team" component={InviteTeamMembers} />
+      <Route path="/activity-logs" component={ActivityLogs} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
