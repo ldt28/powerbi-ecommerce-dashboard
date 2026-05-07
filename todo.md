@@ -285,3 +285,13 @@
 - [x] Add exportSchedules table to database schema with migration
 - [x] Build team management page using TeamMemberCard component at /team-management
 - [x] Add TeamManagement route to App.tsx
+
+
+## Search & Advanced Filtering (Completed)
+- [x] Full-text search across all dashboards - performFullTextSearch utility
+- [x] Advanced filter builder UI - AdvancedFilterBuilder component
+- [x] Saved filter presets - tRPC procedures for save/list/delete
+- [x] Filter history and suggestions - Filter history tracking and suggestions
+- [x] Multi-field search with autocomplete - SearchWithAutocomplete component
+- [x] Dedicated search page at /search-filters with all features
+- [x] 15 comprehensive tests for search and filter utilities (845 tests passing)
