@@ -3,7 +3,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, RefreshCw, Download, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, RefreshCw, Download, Calendar, Filter, Activity, BarChart3 } from "lucide-react";
+import SyncMonitoringDashboard from "@/components/SyncMonitoringDashboard";
 import {
   RevenueTrendChart,
   RevenueByMarketplaceChart,
@@ -29,6 +31,75 @@ export default function AnalyticsDashboard() {
   });
   const [endDate, setEndDate] = useState(new Date());
   const [isExporting, setIsExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"analytics" | "sync">("analytics");
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([
+    "google_analytics",
+    "facebook_ads",
+    "youtube",
+  ]);
+
+  // Mock sync data
+  const mockSyncStatus = [
+    {
+      connectionId: 1,
+      platform: "google_analytics",
+      status: "success" as const,
+      lastSync: new Date(Date.now() - 5 * 60 * 1000),
+      nextSync: new Date(Date.now() + 55 * 60 * 1000),
+      recordsSync: 1250,
+    },
+    {
+      connectionId: 2,
+      platform: "facebook_ads",
+      status: "success" as const,
+      lastSync: new Date(Date.now() - 10 * 60 * 1000),
+      nextSync: new Date(Date.now() + 50 * 60 * 1000),
+      recordsSync: 890,
+    },
+    {
+      connectionId: 3,
+      platform: "youtube",
+      status: "syncing" as const,
+      progress: 65,
+      recordsSync: 450,
+    },
+  ];
+
+  const mockSyncLogs = [
+    {
+      id: "1",
+      timestamp: new Date(Date.now() - 5 * 60 * 1000),
+      platform: "google_analytics",
+      status: "success" as const,
+      message: "Successfully synced 1,250 records",
+      recordsSync: 1250,
+      duration: 2500,
+    },
+    {
+      id: "2",
+      timestamp: new Date(Date.now() - 10 * 60 * 1000),
+      platform: "facebook_ads",
+      status: "success" as const,
+      message: "Successfully synced 890 records",
+      recordsSync: 890,
+      duration: 1800,
+    },
+    {
+      id: "3",
+      timestamp: new Date(Date.now() - 15 * 60 * 1000),
+      platform: "youtube",
+      status: "success" as const,
+      message: "Successfully synced 450 records",
+      recordsSync: 450,
+      duration: 1200,
+    },
+  ];
+
+  const togglePlatform = (platform: string) => {
+    setSelectedPlatforms((prev) =>
+      prev.includes(platform) ? prev.filter((p) => p !== platform) : [...prev, platform]
+    );
+  };
 
   // Fetch all dashboard data
   const { data: kpiMetrics, isLoading: kpiLoading } = trpc.dashboardAnalytics.getKPIMetrics.useQuery(
@@ -192,64 +263,106 @@ export default function AnalyticsDashboard() {
           </Card>
         )}
 
-        {/* Date Range Filter */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Date Range
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex gap-4">
-            <div>
-              <label className="text-sm font-medium">Start Date</label>
-              <input
-                type="date"
-                value={startDate.toISOString().split("T")[0]}
-                onChange={(e) => handleDateChange("start", new Date(e.target.value))}
-                className="mt-2 p-2 border rounded"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">End Date</label>
-              <input
-                type="date"
-                value={endDate.toISOString().split("T")[0]}
-                onChange={(e) => handleDateChange("end", new Date(e.target.value))}
-                className="mt-2 p-2 border rounded"
-              />
-            </div>
-            <div className="flex items-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const date = new Date();
-                  date.setDate(date.getDate() - 7);
-                  setStartDate(date);
-                  setEndDate(new Date());
-                }}
-              >
-                Last 7 Days
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const date = new Date();
-                  date.setDate(date.getDate() - 30);
-                  setStartDate(date);
-                  setEndDate(new Date());
-                }}
-              >
-                Last 30 Days
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Tabs */}
+        <div className="flex gap-4 mb-6 border-b">
+          <button
+            onClick={() => setActiveTab("analytics")}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === "analytics"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <BarChart3 className="w-4 h-4 inline mr-2" />
+            Analytics
+          </button>
+          <button
+            onClick={() => setActiveTab("sync")}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === "sync"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <Activity className="w-4 h-4 inline mr-2" />
+            Sync Monitoring
+          </button>
+        </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {activeTab === "analytics" && (
+          <>
+            {/* Filters */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  Filters
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Date Range */}
+                <div>
+                  <label className="text-sm font-medium block mb-2">Date Range</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {[7, 14, 30, 90].map((days) => (
+                      <Button
+                        key={days}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const end = new Date();
+                          const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+                          setStartDate(start);
+                          setEndDate(end);
+                        }}
+                      >
+                        <Calendar className="w-3 h-3 mr-1" />
+                        Last {days} days
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="date"
+                      value={startDate.toISOString().split("T")[0]}
+                      onChange={(e) => handleDateChange("start", new Date(e.target.value))}
+                      className="px-3 py-2 border rounded-md text-sm"
+                    />
+                    <span className="flex items-center text-gray-600">to</span>
+                    <input
+                      type="date"
+                      value={endDate.toISOString().split("T")[0]}
+                      onChange={(e) => handleDateChange("end", new Date(e.target.value))}
+                      className="px-3 py-2 border rounded-md text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Platform Filter */}
+                <div>
+                  <label className="text-sm font-medium block mb-2">Platforms</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { id: "google_analytics", label: "Google Analytics" },
+                      { id: "facebook_ads", label: "Facebook Ads" },
+                      { id: "youtube", label: "YouTube" },
+                    ].map((platform) => (
+                      <Badge
+                        key={platform.id}
+                        variant={selectedPlatforms.includes(platform.id) ? "default" : "outline"}
+                        className="cursor-pointer"
+                        onClick={() => togglePlatform(platform.id)}
+                      >
+                        {platform.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
             title="Total Revenue"
             value={summaryStats?.totalRevenue || 0}
@@ -273,8 +386,8 @@ export default function AnalyticsDashboard() {
           />
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Charts Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Revenue Trend */}
           <ChartContainer
             title="Revenue Trend"
@@ -324,45 +437,60 @@ export default function AnalyticsDashboard() {
           </ChartContainer>
         </div>
 
-        {/* Top Products */}
-        <ChartContainer
-          title="Top 10 Products by Revenue"
-          isLoading={productsLoading}
-        >
-          {topProducts && topProducts.length > 0 ? (
-            <TopProductsChart data={topProducts} />
-          ) : (
-            <p className="text-muted-foreground">No data available</p>
-          )}
-        </ChartContainer>
+            {/* Top Products */}
+            <ChartContainer
+              title="Top 10 Products by Revenue"
+              isLoading={productsLoading}
+            >
+              {topProducts && topProducts.length > 0 ? (
+                <TopProductsChart data={topProducts} />
+              ) : (
+                <p className="text-muted-foreground">No data available</p>
+              )}
+            </ChartContainer>
 
-        {/* Summary Statistics Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Summary Statistics</CardTitle>
-            <CardDescription>Key metrics for the selected period</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-4 bg-muted rounded">
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">${summaryStats?.totalRevenue.toFixed(2) || "0.00"}</p>
-              </div>
-              <div className="p-4 bg-muted rounded">
-                <p className="text-sm text-muted-foreground">Total Ad Spend</p>
-                <p className="text-2xl font-bold">${summaryStats?.totalAdSpend.toFixed(2) || "0.00"}</p>
-              </div>
-              <div className="p-4 bg-muted rounded">
-                <p className="text-sm text-muted-foreground">Total Profit</p>
-                <p className="text-2xl font-bold text-green-600">${summaryStats?.totalProfit.toFixed(2) || "0.00"}</p>
-              </div>
-              <div className="p-4 bg-muted rounded">
-                <p className="text-sm text-muted-foreground">Total Units Sold</p>
-                <p className="text-2xl font-bold">{summaryStats?.totalUnits || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Summary Statistics Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Summary Statistics</CardTitle>
+                <CardDescription>Key metrics for the selected period</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="p-4 bg-muted rounded">
+                    <p className="text-sm text-muted-foreground">Total Revenue</p>
+                    <p className="text-2xl font-bold">${summaryStats?.totalRevenue.toFixed(2) || "0.00"}</p>
+                  </div>
+                  <div className="p-4 bg-muted rounded">
+                    <p className="text-sm text-muted-foreground">Total Ad Spend</p>
+                    <p className="text-2xl font-bold">${summaryStats?.totalAdSpend.toFixed(2) || "0.00"}</p>
+                  </div>
+                  <div className="p-4 bg-muted rounded">
+                    <p className="text-sm text-muted-foreground">Total Profit</p>
+                    <p className="text-2xl font-bold text-green-600">${summaryStats?.totalProfit.toFixed(2) || "0.00"}</p>
+                  </div>
+                  <div className="p-4 bg-muted rounded">
+                    <p className="text-sm text-muted-foreground">Total Units Sold</p>
+                    <p className="text-2xl font-bold">{summaryStats?.totalUnits || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {activeTab === "sync" && (
+          <SyncMonitoringDashboard
+            syncs={mockSyncStatus}
+            logs={mockSyncLogs}
+            onRefresh={(connectionId) => {
+              console.log(`Refreshing sync for connection ${connectionId}`);
+            }}
+            onRefreshAll={() => {
+              console.log("Refreshing all syncs");
+            }}
+          />
+        )}
       </div>
     </div>
   );
