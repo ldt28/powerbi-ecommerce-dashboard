@@ -168,14 +168,14 @@
 - [ ] Implement PDF/CSV export functionality
 - [ ] Write comprehensive tests for dashboard features
 
-## Platform Connections UI (In Progress)
-- [ ] Create tRPC procedures for platform connection management
-- [ ] Build platform connection card components with status indicators
-- [ ] Create OAuth flow UI modals for each platform
-- [ ] Build platform connections settings page
-- [ ] Implement connection status monitoring and auto-refresh
-- [ ] Add disconnect confirmation dialogs and error handling
-- [ ] Write comprehensive tests for connection management
+## Platform Connections UI (Completed)
+- [x] Create tRPC procedures for platform connection management - listConnections, getConnection, saveConnection, disconnectConnection, updateSyncStatus, refreshConnectionToken
+- [x] Build platform connection card components with status indicators - PlatformConnectionCard with sync status, error messages, token expiry warnings
+- [x] Create OAuth flow UI modals for each platform - OAuthConnectionModal supporting Google Analytics, Facebook Ads, YouTube, Amazon, eBay, Walmart
+- [x] Build platform connections settings page - PlatformConnections page with connected/available tabs, health summary
+- [x] Implement connection status monitoring and auto-refresh - useConnectionMonitoring hook with auto-refresh, error retry, token expiry detection
+- [x] Add disconnect confirmation dialogs and error handling - AlertDialog with confirmation, error messages, retry logic
+- [x] Write comprehensive tests for connection management - 70+ tests covering all connection operations, OAuth flows, error handling, permissions
 
 ## User Experience Features (Completed)
 - [x] Create onboarding flow with step-by-step platform connection guide

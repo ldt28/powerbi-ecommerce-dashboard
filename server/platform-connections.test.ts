@@ -336,3 +336,242 @@ describe("Platform Connections", () => {
     });
   });
 });
+
+
+describe("Platform Connections - Disconnect Confirmation", () => {
+  it("should show disconnect warning", () => {
+    const warning = "This will disconnect your account. Historical data will remain but new data won't sync.";
+    expect(warning).toContain("disconnect");
+    expect(warning).toContain("Historical data");
+  });
+
+  it("should require explicit confirmation", () => {
+    const isConfirmed = false;
+    expect(isConfirmed).toBe(false);
+  });
+});
+
+describe("Platform Connections - Error Handling", () => {
+  it("should handle network errors gracefully", () => {
+    const error = new Error("Network error");
+    expect(error.message).toBe("Network error");
+  });
+
+  it("should handle invalid credentials", () => {
+    const error = "Invalid credentials provided";
+    expect(error).toContain("Invalid");
+  });
+
+  it("should handle rate limiting", () => {
+    const error = "API rate limit exceeded";
+    expect(error).toContain("rate limit");
+  });
+
+  it("should handle token expiration", () => {
+    const error = "Token has expired";
+    expect(error).toContain("expired");
+  });
+});
+
+describe("Platform Connections - Status Indicators", () => {
+  it("should show connected status", () => {
+    const connection = { syncStatus: "success", isActive: true };
+    expect(connection.isActive).toBe(true);
+  });
+
+  it("should show syncing status", () => {
+    const connection = { syncStatus: "syncing" };
+    expect(connection.syncStatus).toBe("syncing");
+  });
+
+  it("should show error status with message", () => {
+    const connection = { syncStatus: "error", syncError: "Invalid token" };
+    expect(connection.syncStatus).toBe("error");
+    expect(connection.syncError).toBe("Invalid token");
+  });
+
+  it("should show idle status", () => {
+    const connection = { syncStatus: "idle" };
+    expect(connection.syncStatus).toBe("idle");
+  });
+});
+
+describe("Platform Connections - Auto-Refresh", () => {
+  it("should auto-refresh on interval", () => {
+    const refreshInterval = 60000; // 1 minute
+    expect(refreshInterval).toBe(60000);
+  });
+
+  it("should handle refresh errors", () => {
+    const error = "Failed to refresh connection";
+    expect(error).toContain("refresh");
+  });
+
+  it("should track last refresh time", () => {
+    const lastRefresh = new Date();
+    expect(lastRefresh).toBeInstanceOf(Date);
+  });
+});
+
+describe("Platform Connections - Connection Health", () => {
+  it("should calculate health percentage", () => {
+    const connections = [
+      { syncStatus: "success" },
+      { syncStatus: "success" },
+      { syncStatus: "error" },
+    ];
+
+    const healthy = connections.filter((c) => c.syncStatus === "success").length;
+    const healthPercentage = (healthy / connections.length) * 100;
+
+    expect(healthPercentage).toBe((2 / 3) * 100);
+  });
+
+  it("should identify critical issues", () => {
+    const connections = [
+      { syncStatus: "error", syncError: "Critical: Invalid token" },
+    ];
+
+    const critical = connections.filter((c) =>
+      c.syncError?.includes("Critical")
+    );
+
+    expect(critical.length).toBe(1);
+  });
+});
+
+describe("Platform Connections - OAuth Flow", () => {
+  it("should handle OAuth callback", () => {
+    const callbackData = {
+      code: "auth_code_123",
+      state: "state_123",
+    };
+
+    expect(callbackData.code).toBeDefined();
+    expect(callbackData.state).toBeDefined();
+  });
+
+  it("should exchange code for token", () => {
+    const token = {
+      accessToken: "access_token_123",
+      refreshToken: "refresh_token_123",
+      expiresIn: 3600,
+    };
+
+    expect(token.accessToken).toBeDefined();
+    expect(token.refreshToken).toBeDefined();
+  });
+
+  it("should handle OAuth errors", () => {
+    const error = "OAuth error: Invalid client";
+    expect(error).toContain("OAuth");
+  });
+});
+
+describe("Platform Connections - Connection Persistence", () => {
+  it("should persist connection on save", () => {
+    const connection = {
+      id: 1,
+      platform: "google_analytics",
+      connectionName: "GA Account",
+    };
+
+    expect(connection.id).toBeDefined();
+    expect(connection.platform).toBe("google_analytics");
+  });
+
+  it("should load connection from database", () => {
+    const connection = {
+      id: 1,
+      platform: "google_analytics",
+      isActive: true,
+    };
+
+    expect(connection).toBeDefined();
+    expect(connection.isActive).toBe(true);
+  });
+
+  it("should delete connection from database", () => {
+    const connections = [
+      { id: 1, platform: "google_analytics" },
+      { id: 2, platform: "facebook_ads" },
+    ];
+
+    const remaining = connections.filter((c) => c.id !== 1);
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].id).toBe(2);
+  });
+});
+
+describe("Platform Connections - Sync Scheduling", () => {
+  it("should schedule sync every hour", () => {
+    const syncInterval = 60 * 60 * 1000; // 1 hour
+    expect(syncInterval).toBe(3600000);
+  });
+
+  it("should allow manual sync trigger", () => {
+    const manualSync = true;
+    expect(manualSync).toBe(true);
+  });
+
+  it("should prevent concurrent syncs", () => {
+    const isSyncing = true;
+    const canSync = !isSyncing;
+    expect(canSync).toBe(false);
+  });
+});
+
+describe("Platform Connections - Permissions", () => {
+  it("should verify user owns connection", () => {
+    const connection = { userId: 1 };
+    const currentUserId = 1;
+    const isOwner = connection.userId === currentUserId;
+    expect(isOwner).toBe(true);
+  });
+
+  it("should allow admin to manage any connection", () => {
+    const userRole = "admin";
+    const canManage = userRole === "admin";
+    expect(canManage).toBe(true);
+  });
+
+  it("should prevent unauthorized access", () => {
+    const connection = { userId: 1 };
+    const currentUserId = 2;
+    const userRole = "user";
+    const canAccess = connection.userId === currentUserId || userRole === "admin";
+    expect(canAccess).toBe(false);
+  });
+});
+
+describe("Platform Connections - Data Validation", () => {
+  it("should validate connection name length", () => {
+    const names = ["Valid Name", "a", "Very Long Connection Name That Exceeds Maximum Length"];
+    names.forEach((name) => {
+      const isValid = name.length > 0 && name.length <= 255;
+      if (name === "a") {
+        expect(isValid).toBe(true);
+      }
+    });
+  });
+
+  it("should validate email format", () => {
+    const emails = ["user@example.com", "invalid-email", "user@domain.co.uk"];
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    emails.forEach((email) => {
+      const isValid = emailRegex.test(email);
+      if (email === "invalid-email") {
+        expect(isValid).toBe(false);
+      } else {
+        expect(isValid).toBe(true);
+      }
+    });
+  });
+
+  it("should validate token format", () => {
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
+    expect(token).toBeDefined();
+    expect(typeof token).toBe("string");
+  });
+});

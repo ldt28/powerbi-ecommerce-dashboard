@@ -28,6 +28,7 @@ export const rolePermissions: RolePermissions = {
     "dashboard:export",
 
     // Team permissions
+    "team:read",
     "team:invite",
     "team:manage",
     "team:remove",
@@ -41,6 +42,7 @@ export const rolePermissions: RolePermissions = {
     "logs:view",
 
     // Connections
+    "connections:read",
     "connections:create",
     "connections:delete",
   ],
@@ -71,6 +73,9 @@ export const rolePermissions: RolePermissions = {
 
     // Activity logs
     "logs:view",
+
+    // Connections
+    "connections:read",
   ],
 };
 
