@@ -28,6 +28,7 @@ import InviteTeamMembers from "./pages/InviteTeamMembers";
 import ActivityLogs from "./pages/ActivityLogs";
 import Team from "./pages/Team";
 import NotificationSettings from "./pages/NotificationSettings";
+import TeamSettings from "./pages/TeamSettings";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -54,6 +55,7 @@ function Router() {
       <Route path="/team-management" component={TeamManagement} />
       <Route path="/team" component={Team} />
       <Route path="/notification-settings" component={NotificationSettings} />
+      <Route path="/team-settings" component={TeamSettings} />
       <Route path="/search-filters" component={SearchAndFilters} />
       <Route path="/invite-team" component={InviteTeamMembers} />
       <Route path="/activity-logs" component={ActivityLogs} />
