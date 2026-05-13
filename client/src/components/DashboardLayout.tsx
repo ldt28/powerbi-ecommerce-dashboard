@@ -37,6 +37,8 @@ const menuItems = [
   { icon: Share2, label: "Social", path: "/dashboard/social" },
   { icon: BarChart3, label: "Comparison", path: "/dashboard/comparison" },
   { icon: Database, label: "Data Management", path: "/dashboard/data" },
+  { icon: BarChart3, label: "Analytics", path: "/dashboard/analytics" },
+  { icon: Zap, label: "Connections", path: "/dashboard/connections" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
