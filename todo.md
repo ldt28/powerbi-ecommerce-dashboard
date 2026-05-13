@@ -312,3 +312,12 @@
 - [x] Notification settings UI page at /notification-settings
 - [x] tRPC procedures for all notification channels
 - [x] Comprehensive tests for all notification types (30+ tests)
+
+
+## Missing Features Implementation (Completed)
+- [x] Shared dashboards with role visibility - Dashboard sharing tRPC router, role-based access control
+- [x] Export to PDF/Excel - Export service with PDF, Excel, CSV support via jsPDF and ExcelJS
+- [x] Demo/test user auto-login - Demo auth service with demo user credentials and mode detection
+- [x] Real-time alerts/thresholds - Alerts service with threshold checking and severity determination
+- [x] Custom dashboard builder - Dashboard builder service with widget management and grid layout
+- [x] Comprehensive tests - 40+ tests covering all missing features with edge cases
