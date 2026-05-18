@@ -25,9 +25,9 @@ interface ChannelNavigationProps {
 
 export function ChannelNavigation({ activeChannel }: ChannelNavigationProps) {
   return (
-    <div className="w-full bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 py-4 px-6 mb-8">
+    <div className="w-full bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-800 light:from-slate-100 light:to-slate-50 border-b border-slate-700 dark:border-slate-700 light:border-slate-200 py-4 px-6 mb-8">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wide">Quick Access Channels</h2>
+        <h2 className="text-sm font-semibold text-slate-400 dark:text-slate-400 light:text-slate-700 mb-4 uppercase tracking-wide">Quick Access Channels</h2>
         <div className="flex flex-wrap gap-2">
           {channels.map((channel) => (
             <Link key={channel.id} href={`/dashboard/store/${channel.id}`}>
