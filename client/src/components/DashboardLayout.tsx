@@ -22,6 +22,7 @@ import {
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { LayoutDashboard, LogOut, PanelLeft, Users, Mail, Zap, Database, BarChart3, Share2, Settings } from "lucide-react";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -237,6 +238,12 @@ function DashboardLayoutContent({
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Team Settings</span>
                 </DropdownMenuItem>
+                <div className="px-2 py-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Theme</span>
+                    <ThemeSwitcher />
+                  </div>
+                </div>
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
