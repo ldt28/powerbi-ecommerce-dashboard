@@ -34,10 +34,10 @@ export function ChannelNavigation({ activeChannel }: ChannelNavigationProps) {
               <Button
                 variant={activeChannel === channel.id ? "default" : "outline"}
                 size="sm"
-                className={`flex items-center gap-2 ${
+                className={`flex items-center gap-2 text-white dark:text-white light:text-slate-900 ${
                   activeChannel === channel.id
                     ? "bg-blue-600 hover:bg-blue-700 border-blue-600"
-                    : "border-slate-600 hover:border-slate-500 hover:bg-slate-800"
+                    : "border-slate-600 dark:border-slate-600 light:border-slate-300 hover:border-slate-500 dark:hover:border-slate-500 hover:bg-slate-800 dark:hover:bg-slate-800 light:hover:bg-slate-200"
                 }`}
               >
                 <span className="text-base">{channel.icon}</span>
