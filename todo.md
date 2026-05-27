@@ -182,13 +182,13 @@
 - [x] Add notification preferences and management UI
 - [x] Write comprehensive tests for UX features
 
-## Team Management & Collaboration (In Progress)
+## Team Management & Collaboration (Completed)
 - [x] Create team management database schema and tRPC procedures
-- [ ] Build invite team members page with email invitations
+- [x] Build invite team members page with email invitations - InviteTeamMembers.tsx with email sending, invitation tracking, role assignment
 - [x] Implement role-based access control (admin, editor, viewer) - 3 roles with 48 permissions, permission matrix, role hierarchy
 - [x] Create team member management UI with permission editing - TeamMemberManagement, RolePermissionEditor components
-- [ ] Build activity logs showing user actions and changes
-- [ ] Implement shared dashboards with role-based visibility
+- [x] Build activity logs showing user actions and changes - ActivityLogs.tsx with filtering, export, and activity summary
+- [x] Implement shared dashboards with role-based visibility - Dashboard sharing infrastructure with role-based access control
 - [x] Write comprehensive tests for team management features - 58 RBAC tests covering all permission checks and enforcement
 
 ## Advanced Analytics Features (Completed)
