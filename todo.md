@@ -11,9 +11,9 @@
 - [x] Date range filtering for all dashboards
 - [x] Interactive charts with Recharts (hover, tooltips, zoom, filtering, legends - 42 tests passing)
 - [x] Real-time data from database (WebSocket, polling, auto-refresh, caching - 23 tests passing)
-- [ ] Export to PDF/Excel
+- [x] Export to PDF/Excel - jsPDF, ExcelJS, CSV export with data transformation
 - [x] Drill-down capability (breadcrumbs, detail views, back/forward navigation - 19 tests passing)
-- [ ] Marketplace comparison view
+- [x] Marketplace comparison view - Period-over-period comparison, growth metrics, predictive trends
 
 ## Data Management
 - [x] CSV/Excel import feature
