@@ -21,29 +21,7 @@ export interface Alert {
   createdAt: Date;
 }
 
-export async function createAlert(alert: Omit<Alert, "id" | "createdAt">) {
-  return db.insert(alerts).values({
-    ...alert,
-    createdAt: new Date(),
-  });
-}
-
-export async function getAlerts(userId: string, unreadOnly = false) {
-  let query = db.select().from(alerts).where((t) => t.userId === userId);
-
-  if (unreadOnly) {
-    query = query.where((t) => !t.isResolved);
-  }
-
-  return query;
-}
-
-export async function resolveAlert(alertId: string) {
-  return db
-    .update(alerts)
-    .set({ isResolved: true })
-    .where((t) => t.id === alertId);
-}
+// Database operations moved to routers for proper dependency injection
 
 export async function checkThreshold(
   currentValue: number,

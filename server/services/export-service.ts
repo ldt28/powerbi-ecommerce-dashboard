@@ -41,7 +41,7 @@ export async function exportToPDF(exportData: ExportData): Promise<Buffer> {
     exportData.columns.map((col) => String(row[col] || ""))
   );
 
-  doc.autoTable({
+  (doc as any).autoTable({
     head: [exportData.columns],
     body: tableData,
     startY: yPosition,
@@ -63,7 +63,7 @@ export async function exportToExcel(exportData: ExportData): Promise<Buffer> {
   const titleCell = worksheet.getCell("A1");
   titleCell.value = exportData.title;
   titleCell.font = { bold: true, size: 14 };
-  titleCell.alignment = { horizontal: "center", vertical: "center" };
+  titleCell.alignment = { horizontal: "center" as any, vertical: "middle" as any };
 
   // Subtitle
   if (exportData.subtitle) {
@@ -71,7 +71,7 @@ export async function exportToExcel(exportData: ExportData): Promise<Buffer> {
     const subtitleCell = worksheet.getCell("A2");
     subtitleCell.value = exportData.subtitle;
     subtitleCell.font = { size: 12 };
-    subtitleCell.alignment = { horizontal: "center" };
+    subtitleCell.alignment = { horizontal: "center" as any };
   }
 
   // Date range
@@ -81,7 +81,7 @@ export async function exportToExcel(exportData: ExportData): Promise<Buffer> {
     const dateCell = worksheet.getCell("A3");
     dateCell.value = `${exportData.dateRange.start.toLocaleDateString()} - ${exportData.dateRange.end.toLocaleDateString()}`;
     dateCell.font = { size: 10, italic: true };
-    dateCell.alignment = { horizontal: "center" };
+    dateCell.alignment = { horizontal: "center" as any };
     dataStartRow = 5;
   }
 
@@ -89,7 +89,7 @@ export async function exportToExcel(exportData: ExportData): Promise<Buffer> {
   const headerRow = worksheet.addRow(exportData.columns);
   headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
   headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2980B9" } };
-  headerRow.alignment = { horizontal: "center", vertical: "center" };
+  headerRow.alignment = { horizontal: "center" as any, vertical: "middle" as any };
 
   // Data
   exportData.data.forEach((row) => {
