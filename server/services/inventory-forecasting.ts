@@ -1,6 +1,4 @@
-import { db } from '../db';
-import { inventoryForecasts, products } from '../../drizzle/schema';
-import { eq, and, gte, lte } from 'drizzle-orm';
+// Pure calculation functions - no database dependencies
 
 export interface DemandForecast {
   productId: string;
@@ -150,76 +148,49 @@ export function determineUrgency(
 }
 
 /**
- * Generate inventory forecast for a product
+ * Generate inventory forecast with mock data (for demo/testing)
  */
-export async function generateInventoryForecast(
+export function generateInventoryForecastMock(
   productId: string,
+  productName: string,
+  currentStock: number,
   historicalDays: number = 90
-): Promise<DemandForecast | null> {
-  try {
-    // Get product info
-    const product = await db.query.products.findFirst({
-      where: eq(products.id, productId),
-    });
+): DemandForecast {
+  // Get historical demand data (mock)
+  const historicalDemand = Array.from({ length: historicalDays }, (_, i) => {
+    const base = 10 + Math.random() * 20;
+    const seasonal = Math.sin((i / 30) * Math.PI * 2) * 5;
+    return Math.max(0, Math.floor(base + seasonal));
+  });
 
-    if (!product) return null;
+  const avgDailyDemand = calculateMovingAverage(historicalDemand, 7);
+  const seasonalFactor = calculateSeasonalFactor(historicalDemand, new Date().getDate());
+  const { forecast: forecastedDemand, confidence, trend } = forecastDemand(
+    historicalDemand,
+    7,
+    seasonalFactor
+  );
 
-    // Get historical demand data (simplified - in production would query sales data)
-    const historicalDemand = Array.from({ length: historicalDays }, (_, i) => {
-      // Simulate demand data - in production would come from actual sales
-      const base = 10 + Math.random() * 20;
-      const seasonal = Math.sin((i / 30) * Math.PI * 2) * 5;
-      return Math.max(0, Math.floor(base + seasonal));
-    });
+  const leadTime = 7; // days
+  const safetyStock = avgDailyDemand * 2; // 2 days of safety stock
+  const reorderPoint = calculateReorderPoint(avgDailyDemand, leadTime, safetyStock);
+  const eoq = calculateEOQ(avgDailyDemand * 365);
+  const daysUntilStockout = calculateDaysUntilStockout(currentStock, avgDailyDemand);
+  const urgency = determineUrgency(daysUntilStockout, leadTime);
 
-    const avgDailyDemand = calculateMovingAverage(historicalDemand, 7);
-    const seasonalFactor = calculateSeasonalFactor(historicalDemand, new Date().getDate());
-    const { forecast: forecastedDemand, confidence, trend } = forecastDemand(
-      historicalDemand,
-      7,
-      seasonalFactor
-    );
-
-    const leadTime = 7; // days
-    const safetyStock = avgDailyDemand * 2; // 2 days of safety stock
-    const reorderPoint = calculateReorderPoint(avgDailyDemand, leadTime, safetyStock);
-    const eoq = calculateEOQ(avgDailyDemand * 365);
-    const daysUntilStockout = calculateDaysUntilStockout(product.currentStock || 0, avgDailyDemand);
-    const urgency = determineUrgency(daysUntilStockout, leadTime);
-
-    return {
-      productId,
-      sku: product.sku || '',
-      productName: product.name,
-      currentStock: product.currentStock || 0,
-      forecastedDemand,
-      recommendedReorderPoint: Math.ceil(reorderPoint),
-      recommendedOrderQuantity: eoq,
-      daysUntilStockout: isFinite(daysUntilStockout) ? daysUntilStockout : 999,
-      confidence,
-      trend,
-      seasonalFactor,
-      lastRestockDate: product.lastRestockDate,
-      urgency,
-    };
-  } catch (error) {
-    console.error(`Error generating forecast for product ${productId}:`, error);
-    return null;
-  }
-}
-
-/**
- * Generate forecasts for all products
- */
-export async function generateAllInventoryForecasts(): Promise<DemandForecast[]> {
-  try {
-    const allProducts = await db.query.products.findMany();
-    const forecasts = await Promise.all(
-      allProducts.map((product) => generateInventoryForecast(product.id))
-    );
-    return forecasts.filter((f) => f !== null) as DemandForecast[];
-  } catch (error) {
-    console.error('Error generating all forecasts:', error);
-    return [];
-  }
+  return {
+    productId,
+    sku: `SKU-${productId}`,
+    productName,
+    currentStock,
+    forecastedDemand,
+    recommendedReorderPoint: Math.ceil(reorderPoint),
+    recommendedOrderQuantity: eoq,
+    daysUntilStockout: isFinite(daysUntilStockout) ? daysUntilStockout : 999,
+    confidence,
+    trend,
+    seasonalFactor,
+    lastRestockDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    urgency,
+  };
 }

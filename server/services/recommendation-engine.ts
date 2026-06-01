@@ -177,12 +177,13 @@ export function identifyCrossSellOpportunities(
   for (const category of purchasedCategories) {
     const affinity = categoryAffinities.get(category) || 0.5;
     // Find categories that go well with this one
-    for (const [otherCategory, otherAffinity] of categoryAffinities.entries()) {
-      if (!purchasedCategories.has(otherCategory)) {
-        const score = affinity * otherAffinity;
-        complementaryCategories.set(otherCategory, (complementaryCategories.get(otherCategory) || 0) + score);
-      }
+    for (const entry of Array.from(categoryAffinities.entries())) {
+    const [otherCategory, otherAffinity] = entry;
+    if (!purchasedCategories.has(otherCategory)) {
+      const score = affinity * otherAffinity;
+      complementaryCategories.set(otherCategory, (complementaryCategories.get(otherCategory) || 0) + score);
     }
+  }
   }
 
   // Get top products from complementary categories
@@ -221,9 +222,10 @@ export function identifyBundleOpportunities(
 ): ProductRecommendation[] {
   const recommendations: ProductRecommendation[] = [];
 
-  for (const [bundleKey, frequency] of frequentBundles.entries()) {
+  for (const entry of Array.from(frequentBundles.entries())) {
+    const [bundleKey, frequency] = entry;
     const bundleProducts = bundleKey.split(',');
-    const missingProducts = bundleProducts.filter((p) => !purchasedProducts.includes(p));
+    const missingProducts = bundleProducts.filter((p: string) => !purchasedProducts.includes(p));
 
     if (missingProducts.length > 0 && missingProducts.length < bundleProducts.length) {
       for (const productId of missingProducts) {
@@ -238,7 +240,7 @@ export function identifyBundleOpportunities(
             score: Math.min(1, frequency / 100),
             reason: `Complete the popular bundle - frequently bought together`,
             type: 'collaborative',
-            complementaryProducts: bundleProducts.filter((p) => p !== productId),
+            complementaryProducts: bundleProducts.filter((p: string) => p !== productId),
             estimatedConversionLift: 0.25,
           });
         }
