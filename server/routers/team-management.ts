@@ -23,15 +23,15 @@ export const teamManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
 
       // Generate invitation token
       const token = crypto.randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
       // Create invitation
-      const result = await db
+      await db
         .insert(teamInvitations)
-        .$returningId()
         .values({
           teamId: input.teamId || 1, // Default to team 1
           email: input.email,
@@ -53,7 +53,7 @@ export const teamManagementRouter = router({
       // Mock email sending (replace with real email service)
       console.log(`Invitation email sent to ${input.email} with token: ${token}`);
 
-      return { success: true, invitationId: result[0].id };
+      return { success: true, token };
     }),
 
   /**
@@ -63,6 +63,7 @@ export const teamManagementRouter = router({
     .input(z.object({ token: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
 
       // Find invitation
       const invitation = await db
@@ -112,6 +113,7 @@ export const teamManagementRouter = router({
     .input(z.object({ teamId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
 
       const members = await db
         .select()
@@ -134,6 +136,7 @@ export const teamManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
 
       // Check if user is admin
       const userRole = await db
@@ -181,6 +184,7 @@ export const teamManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
 
       // Check if user is admin
       const userRole = await db
@@ -197,10 +201,10 @@ export const teamManagementRouter = router({
         throw new Error("Only admins can remove members");
       }
 
-      // Remove member
+      // Remove member by marking as rejected
       await db
         .update(teamMembers)
-        .set({ status: "inactive" })
+        .set({ status: "rejected" })
         .where(eq(teamMembers.id, input.memberId));
 
       // Log activity
@@ -227,6 +231,7 @@ export const teamManagementRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
 
       const logs = await db
         .select()
@@ -245,6 +250,7 @@ export const teamManagementRouter = router({
     .input(z.object({ teamId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
 
       const invitations = await db
         .select()
@@ -266,6 +272,7 @@ export const teamManagementRouter = router({
     .input(z.object({ invitationId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
 
       await db
         .update(teamInvitations)
@@ -282,6 +289,7 @@ export const teamManagementRouter = router({
     .input(z.object({ teamId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
+      if (!db) throw new Error("Database connection failed");
 
       const team = await db
         .select()

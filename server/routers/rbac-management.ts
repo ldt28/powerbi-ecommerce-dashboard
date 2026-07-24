@@ -177,16 +177,16 @@ export const rbacManagementRouter = router({
    */
   getPermissionMatrix: protectedProcedure.query(async ({ ctx }) => {
     const allPermissions = new Set<string>();
-    Object.values(rolePermissions).forEach((perms) => {
-      perms.forEach((p) => allPermissions.add(p));
+    Object.values(rolePermissions).forEach((perms: string[]) => {
+      perms.forEach((p: string) => allPermissions.add(p));
     });
 
     const matrix: Record<string, Record<string, boolean>> = {};
     const roles: UserRole[] = ["admin", "editor", "viewer"];
 
-    roles.forEach((role) => {
+    roles.forEach((role: UserRole) => {
       matrix[role] = {};
-      allPermissions.forEach((permission) => {
+      allPermissions.forEach((permission: string) => {
         matrix[role][permission] = hasPermission(role, permission);
       });
     });

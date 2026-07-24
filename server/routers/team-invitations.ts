@@ -1,6 +1,6 @@
 import { protectedProcedure, publicProcedure, router } from '../_core/trpc';
 import { z } from 'zod';
-import { db } from '../db';
+import { getDb } from '../db';
 import { teamInvitations, users } from '../../drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
@@ -47,7 +47,9 @@ export const teamInvitationsRouter = router({
       }
 
       // Check if email already exists in team
-      const existingUser = await db.query.users.findFirst({
+      const dbConnection = await getDb();
+      if (!dbConnection) throw new Error("Database connection failed");
+      const existingUser = await dbConnection.query.users.findFirst({
         where: eq(users.email, input.email),
       });
 
@@ -63,13 +65,12 @@ export const teamInvitationsRouter = router({
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
       // Create invitation
-      const [invitation] = await db.insert(teamInvitations).values({
+      const [invitation] = await dbConnection.insert(teamInvitations).values({
         email: input.email,
         role: input.role,
-        inviteCode,
+        token: inviteCode,
         expiresAt,
-        createdBy: ctx.user.id,
-        message: input.message,
+        invitedBy: ctx.user.id,
       }).returning();
 
       // Send email
@@ -97,11 +98,8 @@ export const teamInvitationsRouter = router({
         });
       }
 
-      const invitations = await db.query.teamInvitations.findMany({
-        where: and(
-          eq(teamInvitations.createdBy, ctx.user.id),
-        ),
-        orderBy: desc(teamInvitations.createdAt),
+      const invitations = await dbConnection.query.teamInvitations.findMany({
+        orderBy: desc(teamInvitations.id),
       });
 
       return invitations;
@@ -116,8 +114,10 @@ export const teamInvitationsRouter = router({
     }))
     .mutation(async ({ input }) => {
       // Find invitation
-      const invitation = await db.query.teamInvitations.findFirst({
-        where: eq(teamInvitations.inviteCode, input.inviteCode),
+      const dbConnection = await getDb();
+      if (!dbConnection) throw new Error("Database connection failed");
+      const invitation = await dbConnection.query.teamInvitations.findFirst({
+        where: eq(teamInvitations.token, input.inviteCode),
       });
 
       if (!invitation) {
@@ -136,7 +136,7 @@ export const teamInvitationsRouter = router({
       }
 
       // Create user
-      const [user] = await db.insert(users).values({
+      const [user] = await dbConnection.insert(users).values({
         email: invitation.email,
         name: input.name,
         role: invitation.role,
@@ -144,9 +144,9 @@ export const teamInvitationsRouter = router({
       }).returning();
 
       // Mark invitation as accepted
-      await db.update(teamInvitations)
-        .set({ acceptedAt: new Date(), acceptedBy: user.id })
-        .where(eq(teamInvitations.id, invitation.id));
+      await dbConnection.update(teamInvitations)
+        .set({ status: 'accepted', acceptedAt: new Date() })
+        .where(eq(teamInvitations.token, invitation.token));
 
       return {
         success: true,
@@ -167,8 +167,10 @@ export const teamInvitationsRouter = router({
         });
       }
 
-      const invitation = await db.query.teamInvitations.findFirst({
-        where: eq(teamInvitations.id, input.invitationId),
+      const dbConnection = await getDb();
+      if (!dbConnection) throw new Error("Database connection failed");
+      const invitation = await dbConnection.query.teamInvitations.findFirst({
+        where: eq(teamInvitations.token, input.invitationId),
       });
 
       if (!invitation) {
@@ -181,7 +183,7 @@ export const teamInvitationsRouter = router({
       // Send email
       const emailSent = await sendInvitationEmail(
         invitation.email,
-        invitation.inviteCode,
+        invitation.token,
         ctx.user.name || 'Team Admin',
         'EcomAnalytics'
       );
@@ -202,8 +204,10 @@ export const teamInvitationsRouter = router({
         });
       }
 
-      await db.delete(teamInvitations)
-        .where(eq(teamInvitations.id, input.invitationId));
+      const dbConnection = await getDb();
+      if (!dbConnection) throw new Error("Database connection failed");
+      await dbConnection.delete(teamInvitations)
+        .where(eq(teamInvitations.token, input.invitationId));
 
       return { success: true };
     }),
@@ -211,11 +215,13 @@ export const teamInvitationsRouter = router({
   // Get invitation details
   getInvitation: publicProcedure
     .input(z.object({
-      inviteCode: z.string(),
+      token: z.string(),
     }))
     .query(async ({ input }) => {
-      const invitation = await db.query.teamInvitations.findFirst({
-        where: eq(teamInvitations.inviteCode, input.inviteCode),
+      const dbConnection = await getDb();
+      if (!dbConnection) throw new Error("Database connection failed");
+      const invitation = await dbConnection.query.teamInvitations.findFirst({
+        where: eq(teamInvitations.token, input.token),
       });
 
       if (!invitation) {
