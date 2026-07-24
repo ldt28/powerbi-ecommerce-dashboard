@@ -43,8 +43,8 @@
 - [x] Email Marketing vitest tests
 
 ## Bug Fixes
-- [ ] Create demo/test user for development auto-login
-- [ ] Fix dashboard 404 error by implementing dev authentication
+- [x] Create demo/test user for development auto-login
+- [x] Fix dashboard 404 error by implementing dev authentication
 
 
 ## Export Functionality

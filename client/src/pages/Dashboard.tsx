@@ -20,25 +20,29 @@ import AnalyticsDashboard from "./AnalyticsDashboard";
 import PlatformConnections from "./PlatformConnections";
 
 const Dashboard: FC = () => {
-  // Authentication temporarily disabled for development
-  // const { user, loading } = useAuth();
-  //
-  // useEffect(() => {
-  //   if (!loading && !user) {
-  //     window.location.href = getLoginUrl();
-  //   }
-  // }, [user, loading]);
-  //
-  // if (loading || !user) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen">
-  //       <div className="text-center">
-  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-  //         <p>Loading...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      // In development, redirect to dev-login endpoint to auto-login
+      if (import.meta.env.DEV) {
+        window.location.href = '/api/dev-login';
+      } else {
+        window.location.href = getLoginUrl();
+      }
+    }
+  }, [user, loading]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DashboardLayout>
