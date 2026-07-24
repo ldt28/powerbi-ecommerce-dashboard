@@ -53,21 +53,24 @@ async function startServer() {
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
-} else {
-    // Catch-all route for SPA - MUST be before serveStatic
+  } else {
+    // Serve static files in production
+    serveStatic(app);
+    // Catch-all route for SPA - serve index.html for all non-API routes
     app.get("*", (req, res, next) => {
       if (req.path.startsWith("/api") || req.path.startsWith("/trpc")) {
         return next();
       }
-      res.sendFile(path.resolve("client/dist/index.html"));
+      // Serve index.html for SPA routing
+      const indexPath = path.resolve(__dirname, "../client/dist/index.html");
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error("Error serving index.html:", err);
+          res.status(404).send("Not Found");
+        }
+      });
     });
-    serveStatic(app);
   }
-
-  // Catch-all route for SPA - serve index.html for all non-API routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-  });
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
