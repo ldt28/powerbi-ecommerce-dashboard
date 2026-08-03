@@ -520,3 +520,104 @@ export const exportSchedules = mysqlTable("export_schedules", {
 });
 export type ExportSchedule = typeof exportSchedules.$inferSelect;
 export type InsertExportSchedule = typeof exportSchedules.$inferInsert;
+
+
+// Custom Dashboards (user-created dashboard configurations)
+export const customDashboards = mysqlTable("custom_dashboards", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  teamId: int("teamId"),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  layout: text("layout").notNull(), // JSON: grid layout configuration
+  widgets: text("widgets").notNull(), // JSON: array of widget configurations
+  isPublic: int("isPublic").default(0).notNull(),
+  isTemplate: int("isTemplate").default(0).notNull(),
+  templateCategory: varchar("templateCategory", { length: 64 }),
+  viewCount: int("viewCount").default(0).notNull(),
+  lastViewedAt: timestamp("lastViewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CustomDashboard = typeof customDashboards.$inferSelect;
+export type InsertCustomDashboard = typeof customDashboards.$inferInsert;
+
+// Dashboard Sharing (who has access to which dashboards)
+export const dashboardSharing = mysqlTable("dashboard_sharing", {
+  id: int("id").autoincrement().primaryKey(),
+  dashboardId: int("dashboardId").notNull(),
+  sharedWithUserId: int("sharedWithUserId"),
+  sharedWithTeamId: int("sharedWithTeamId"),
+  permission: mysqlEnum("permission", ["view", "edit", "admin"]).default("view").notNull(),
+  sharedBy: int("sharedBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DashboardSharing = typeof dashboardSharing.$inferSelect;
+export type InsertDashboardSharing = typeof dashboardSharing.$inferInsert;
+
+// User Preferences (theme, timezone, language, notifications)
+export const userPreferences = mysqlTable("user_preferences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  theme: mysqlEnum("theme", ["light", "dark", "auto"]).default("auto").notNull(),
+  timezone: varchar("timezone", { length: 64 }).default("UTC").notNull(),
+  language: varchar("language", { length: 10 }).default("en").notNull(),
+  dateFormat: varchar("dateFormat", { length: 20 }).default("MM/DD/YYYY").notNull(),
+  currencySymbol: varchar("currencySymbol", { length: 5 }).default("$").notNull(),
+  emailNotifications: int("emailNotifications").default(1).notNull(),
+  slackNotifications: int("slackNotifications").default(0).notNull(),
+  slackWebhookUrl: text("slackWebhookUrl"),
+  defaultDashboardId: int("defaultDashboardId"),
+  itemsPerPage: int("itemsPerPage").default(20).notNull(),
+  autoRefreshInterval: int("autoRefreshInterval").default(300).notNull(), // seconds
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type UserPreference = typeof userPreferences.$inferSelect;
+export type InsertUserPreference = typeof userPreferences.$inferInsert;
+
+// Team Roles (detailed role definitions per team)
+export const teamRoles = mysqlTable("team_roles", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  name: varchar("name", { length: 64 }).notNull(),
+  description: text("description"),
+  permissions: text("permissions").notNull(), // JSON: array of permission strings
+  isDefault: int("isDefault").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type TeamRole = typeof teamRoles.$inferSelect;
+export type InsertTeamRole = typeof teamRoles.$inferInsert;
+
+// Dashboard Widgets (reusable widget definitions)
+export const dashboardWidgets = mysqlTable("dashboard_widgets", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  type: varchar("type", { length: 64 }).notNull(), // e.g., "metric", "chart", "table", "map"
+  category: varchar("category", { length: 64 }).notNull(), // e.g., "sales", "marketing", "inventory"
+  description: text("description"),
+  icon: varchar("icon", { length: 64 }),
+  defaultConfig: text("defaultConfig").notNull(), // JSON: default widget configuration
+  isActive: int("isActive").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DashboardWidget = typeof dashboardWidgets.$inferSelect;
+export type InsertDashboardWidget = typeof dashboardWidgets.$inferInsert;
+
+// Team Activity Log (track team actions for audit)
+export const teamActivityLog = mysqlTable("team_activity_log", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  userId: int("userId").notNull(),
+  action: varchar("action", { length: 64 }).notNull(), // e.g., "member_added", "dashboard_shared"
+  resourceType: varchar("resourceType", { length: 64 }).notNull(), // e.g., "dashboard", "team_member"
+  resourceId: int("resourceId"),
+  details: text("details"), // JSON: additional details
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type TeamActivityLog = typeof teamActivityLog.$inferSelect;
+export type InsertTeamActivityLog = typeof teamActivityLog.$inferInsert;

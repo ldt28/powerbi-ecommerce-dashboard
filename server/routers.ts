@@ -17,6 +17,8 @@ import { exportRouter } from "./routers/export";
 import { marketplaceComparisonRouter } from "./routers/marketplace-comparison";
 import { exportSchedulingRouter } from "./routers/export-scheduling";
 import { searchFiltersRouter } from "./routers/search-filters";
+import { teamsRouter } from "./routers/teams";
+import { dashboardsRouter } from "./routers/dashboards";
 
 export const appRouter = router({
   system: systemRouter,
@@ -213,6 +215,10 @@ export const appRouter = router({
   searchFilters: searchFiltersRouter,
   // Marketplace Comparison router
   marketplaceComparison: marketplaceComparisonRouter,
+  // Teams router (team management, members, roles)
+  teams: teamsRouter,
+  // Dashboards router (custom dashboards, sharing, preferences)
+  dashboards: dashboardsRouter,
 });
 
 export type AppRouter = typeof appRouter;
