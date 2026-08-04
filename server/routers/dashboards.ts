@@ -1,18 +1,16 @@
 import { router, protectedProcedure } from "../_core/trpc";
+import { hasDashboardAccess, type RequiredDashboardAccess } from "../_core/authorization";
 import { z } from "zod";
 import * as dashboardDb from "../db/dashboards";
 import { TRPCError } from "@trpc/server";
 
-type RequiredAccess = "view" | "edit" | "admin";
-const permissionRank = { public: 0, view: 1, edit: 2, admin: 3, owner: 4 } as const;
-
 async function requireDashboardAccess(
   dashboardId: number,
   userId: number,
-  required: RequiredAccess
+  required: RequiredDashboardAccess
 ) {
   const permission = await dashboardDb.getDashboardPermission(dashboardId, userId);
-  if (!permission || permissionRank[permission] < permissionRank[required]) {
+  if (!hasDashboardAccess(permission, required)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "You do not have access to this dashboard" });
   }
   return permission;
@@ -28,20 +26,11 @@ export const dashboardsRouter = router({
       teamId: z.number().int().positive().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const dashboard = await dashboardDb.createCustomDashboard(
-        ctx.user.id,
-        input.name,
-        input.layout,
-        input.widgets,
-        input.teamId,
-        input.description
-      );
+      const dashboard = await dashboardDb.createCustomDashboard(ctx.user.id, input.name, input.layout, input.widgets, input.teamId, input.description);
       return { success: true, dashboard };
     }),
 
-  getUserDashboards: protectedProcedure.query(({ ctx }) =>
-    dashboardDb.getUserDashboards(ctx.user.id)
-  ),
+  getUserDashboards: protectedProcedure.query(({ ctx }) => dashboardDb.getUserDashboards(ctx.user.id)),
 
   getDashboard: protectedProcedure
     .input(z.object({ dashboardId: z.number().int().positive() }))
@@ -65,11 +54,8 @@ export const dashboardsRouter = router({
     .mutation(async ({ ctx, input }) => {
       await requireDashboardAccess(input.dashboardId, ctx.user.id, "edit");
       const dashboard = await dashboardDb.updateDashboard(input.dashboardId, {
-        name: input.name,
-        description: input.description,
-        layout: input.layout,
-        widgets: input.widgets,
-        isPublic: input.isPublic,
+        name: input.name, description: input.description, layout: input.layout,
+        widgets: input.widgets, isPublic: input.isPublic,
       });
       return { success: true, dashboard };
     }),
@@ -95,22 +81,14 @@ export const dashboardsRouter = router({
     .mutation(async ({ ctx, input }) => {
       await requireDashboardAccess(input.dashboardId, ctx.user.id, "admin");
       const sharing = await dashboardDb.shareDashboard(
-        input.dashboardId,
-        ctx.user.id,
-        input.sharedWithUserId,
-        input.sharedWithTeamId,
-        input.permission
+        input.dashboardId, ctx.user.id, input.sharedWithUserId,
+        input.sharedWithTeamId, input.permission
       );
       return { success: true, sharing };
     }),
 
-  getSharedDashboards: protectedProcedure.query(({ ctx }) =>
-    dashboardDb.getSharedDashboards(ctx.user.id)
-  ),
-
-  getUserPreferences: protectedProcedure.query(({ ctx }) =>
-    dashboardDb.getUserPreferences(ctx.user.id)
-  ),
+  getSharedDashboards: protectedProcedure.query(({ ctx }) => dashboardDb.getSharedDashboards(ctx.user.id)),
+  getUserPreferences: protectedProcedure.query(({ ctx }) => dashboardDb.getUserPreferences(ctx.user.id)),
 
   updateUserPreferences: protectedProcedure
     .input(z.object({
