@@ -29,6 +29,7 @@ import ActivityLogs from "./pages/ActivityLogs";
 import Team from "./pages/Team";
 import NotificationSettings from "./pages/NotificationSettings";
 import TeamSettings from "./pages/TeamSettings";
+import BigCommerceSetup from "./pages/BigCommerceSetup";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -59,6 +60,7 @@ function Router() {
       <Route path="/search-filters" component={SearchAndFilters} />
       <Route path="/invite-team" component={InviteTeamMembers} />
       <Route path="/activity-logs" component={ActivityLogs} />
+      <Route path="/bigcommerce" component={BigCommerceSetup} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
