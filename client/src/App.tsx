@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { withProtectedRoute } from "./components/ProtectedRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
@@ -30,11 +31,25 @@ import Team from "./pages/Team";
 import NotificationSettings from "./pages/NotificationSettings";
 import TeamSettings from "./pages/TeamSettings";
 
+const ProtectedDashboard = withProtectedRoute(Dashboard);
+const ProtectedAdminDashboard = withProtectedRoute(AdminDashboard, "admin");
+const ProtectedAnalytics = withProtectedRoute(AnalyticsDashboard);
+const ProtectedConnections = withProtectedRoute(PlatformConnections);
+const ProtectedCustomization = withProtectedRoute(CustomizableDashboard);
+const ProtectedSettings = withProtectedRoute(Settings);
+const ProtectedMarketplace = withProtectedRoute(MarketplaceComparison);
+const ProtectedTeamManagement = withProtectedRoute(TeamManagement);
+const ProtectedTeam = withProtectedRoute(Team);
+const ProtectedNotificationSettings = withProtectedRoute(NotificationSettings);
+const ProtectedTeamSettings = withProtectedRoute(TeamSettings);
+const ProtectedSearch = withProtectedRoute(SearchAndFilters);
+const ProtectedInvitations = withProtectedRoute(InviteTeamMembers);
+const ProtectedActivityLogs = withProtectedRoute(ActivityLogs);
+
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
+      <Route path="/" component={Home} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/documentation" component={Documentation} />
       <Route path="/case-studies" component={CaseStudies} />
@@ -43,23 +58,24 @@ function Router() {
       <Route path="/contact" component={Contact} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/dashboard/*" component={Dashboard} />
-      <Route path="/admin/owner" component={AdminDashboard} />
-      <Route path="/analytics" component={AnalyticsDashboard} />
-      <Route path="/settings/connections" component={PlatformConnections} />
-      <Route path="/dashboard/customize" component={CustomizableDashboard} />
-      <Route path="/settings" component={Settings} />
       <Route path="/help" component={Help} />
-      <Route path="/marketplace-comparison" component={MarketplaceComparison} />
-      <Route path="/team-management" component={TeamManagement} />
-      <Route path="/team" component={Team} />
-      <Route path="/notification-settings" component={NotificationSettings} />
-      <Route path="/team-settings" component={TeamSettings} />
-      <Route path="/search-filters" component={SearchAndFilters} />
-      <Route path="/invite-team" component={InviteTeamMembers} />
-      <Route path="/activity-logs" component={ActivityLogs} />
-      <Route path={"/404"} component={NotFound} />
+
+      <Route path="/dashboard/customize" component={ProtectedCustomization} />
+      <Route path="/dashboard" component={ProtectedDashboard} />
+      <Route path="/dashboard/*" component={ProtectedDashboard} />
+      <Route path="/admin/owner" component={ProtectedAdminDashboard} />
+      <Route path="/analytics" component={ProtectedAnalytics} />
+      <Route path="/settings/connections" component={ProtectedConnections} />
+      <Route path="/settings" component={ProtectedSettings} />
+      <Route path="/marketplace-comparison" component={ProtectedMarketplace} />
+      <Route path="/team-management" component={ProtectedTeamManagement} />
+      <Route path="/team" component={ProtectedTeam} />
+      <Route path="/notification-settings" component={ProtectedNotificationSettings} />
+      <Route path="/team-settings" component={ProtectedTeamSettings} />
+      <Route path="/search-filters" component={ProtectedSearch} />
+      <Route path="/invite-team" component={ProtectedInvitations} />
+      <Route path="/activity-logs" component={ProtectedActivityLogs} />
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );

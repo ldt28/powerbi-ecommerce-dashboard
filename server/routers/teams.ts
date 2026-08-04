@@ -1,186 +1,90 @@
 import { router, protectedProcedure } from "../_core/trpc";
+import { isTeamAdmin } from "../_core/authorization";
 import { z } from "zod";
 import * as teamDb from "../db/teams";
 import { TRPCError } from "@trpc/server";
 
+async function requireMembership(teamId: number, userId: number) {
+  const membership = await teamDb.getTeamMembership(teamId, userId);
+  if (!membership) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "You do not have access to this team" });
+  }
+  return membership;
+}
+
+async function requireAdmin(teamId: number, userId: number) {
+  const membership = await requireMembership(teamId, userId);
+  if (!isTeamAdmin(membership)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Only team admins can perform this action" });
+  }
+  return membership;
+}
+
 export const teamsRouter = router({
-  /**
-   * Create a new team
-   */
   createTeam: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(1).max(255),
-        description: z.string().optional(),
-      })
-    )
+    .input(z.object({ name: z.string().trim().min(1).max(255), description: z.string().max(2000).optional() }))
     .mutation(async ({ ctx, input }) => {
-      try {
-        const team = await teamDb.createTeam(ctx.user.id, input.name, input.description);
-        return { success: true, team };
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Failed to create team",
-        });
-      }
+      const team = await teamDb.createTeam(ctx.user.id, input.name, input.description);
+      return { success: true, team };
     }),
 
-  /**
-   * Get user's teams
-   */
-  getUserTeams: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const teams = await teamDb.getUserTeams(ctx.user.id);
-      return teams;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch teams",
-      });
-    }
-  }),
+  getUserTeams: protectedProcedure.query(({ ctx }) => teamDb.getUserTeams(ctx.user.id)),
 
-  /**
-   * Get team details
-   */
   getTeam: protectedProcedure
-    .input(z.object({ teamId: z.number() }))
+    .input(z.object({ teamId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
-      try {
-        const team = await teamDb.getTeamById(input.teamId);
-        if (!team) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Team not found",
-          });
-        }
-        return team;
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch team",
-        });
-      }
+      await requireMembership(input.teamId, ctx.user.id);
+      const team = await teamDb.getTeamById(input.teamId);
+      if (!team) throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
+      return team;
     }),
 
-  /**
-   * Get team members
-   */
   getTeamMembers: protectedProcedure
-    .input(z.object({ teamId: z.number() }))
+    .input(z.object({ teamId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
-      try {
-        const members = await teamDb.getTeamMembers(input.teamId);
-        return members;
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch team members",
-        });
-      }
+      await requireMembership(input.teamId, ctx.user.id);
+      return teamDb.getTeamMembers(input.teamId);
     }),
 
-  /**
-   * Add team member
-   */
   addTeamMember: protectedProcedure
-    .input(
-      z.object({
-        teamId: z.number(),
-        userId: z.number(),
-        role: z.enum(["admin", "editor", "viewer"]),
-      })
-    )
+    .input(z.object({
+      teamId: z.number().int().positive(),
+      userId: z.number().int().positive(),
+      role: z.enum(["admin", "editor", "viewer"]),
+    }))
     .mutation(async ({ ctx, input }) => {
-      try {
-        // Verify caller is team admin
-        const members = await teamDb.getTeamMembers(input.teamId);
-        const callerMember = members.find((m) => m.userId === ctx.user.id);
-
-        if (!callerMember || callerMember.role !== "admin") {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Only team admins can add members",
-          });
-        }
-
-        const member = await teamDb.addTeamMember(input.teamId, input.userId, input.role, ctx.user.id);
-        return { success: true, member };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Failed to add member",
-        });
-      }
+      await requireAdmin(input.teamId, ctx.user.id);
+      const member = await teamDb.addTeamMember(input.teamId, input.userId, input.role, ctx.user.id);
+      return { success: true, member };
     }),
 
-  /**
-   * Update team member role
-   */
   updateTeamMemberRole: protectedProcedure
-    .input(
-      z.object({
-        teamId: z.number(),
-        memberId: z.number(),
-        role: z.enum(["admin", "editor", "viewer"]),
-      })
-    )
+    .input(z.object({
+      teamId: z.number().int().positive(),
+      memberId: z.number().int().positive(),
+      role: z.enum(["admin", "editor", "viewer"]),
+    }))
     .mutation(async ({ ctx, input }) => {
-      try {
-        await teamDb.updateTeamMemberRole(input.teamId, input.memberId, input.role, ctx.user.id);
-        return { success: true };
-      } catch (error) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: error instanceof Error ? error.message : "Failed to update member role",
-        });
-      }
+      await requireAdmin(input.teamId, ctx.user.id);
+      await teamDb.updateTeamMemberRole(input.teamId, input.memberId, input.role, ctx.user.id);
+      return { success: true };
     }),
 
-  /**
-   * Remove team member
-   */
   removeTeamMember: protectedProcedure
-    .input(
-      z.object({
-        teamId: z.number(),
-        memberId: z.number(),
-      })
-    )
+    .input(z.object({ teamId: z.number().int().positive(), memberId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
-      try {
-        await teamDb.removeTeamMember(input.teamId, input.memberId, ctx.user.id);
-        return { success: true };
-      } catch (error) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: error instanceof Error ? error.message : "Failed to remove member",
-        });
-      }
+      await requireAdmin(input.teamId, ctx.user.id);
+      await teamDb.removeTeamMember(input.teamId, input.memberId, ctx.user.id);
+      return { success: true };
     }),
 
-  /**
-   * Get team activity log
-   */
   getActivityLog: protectedProcedure
-    .input(
-      z.object({
-        teamId: z.number(),
-        limit: z.number().default(50),
-      })
-    )
+    .input(z.object({
+      teamId: z.number().int().positive(),
+      limit: z.number().int().min(1).max(100).default(50),
+    }))
     .query(async ({ ctx, input }) => {
-      try {
-        const logs = await teamDb.getTeamActivityLog(input.teamId, input.limit);
-        return logs;
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch activity log",
-        });
-      }
+      await requireMembership(input.teamId, ctx.user.id);
+      return teamDb.getTeamActivityLog(input.teamId, input.limit);
     }),
 });
