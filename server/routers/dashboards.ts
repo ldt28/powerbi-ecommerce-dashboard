@@ -3,216 +3,131 @@ import { z } from "zod";
 import * as dashboardDb from "../db/dashboards";
 import { TRPCError } from "@trpc/server";
 
+type RequiredAccess = "view" | "edit" | "admin";
+const permissionRank = { public: 0, view: 1, edit: 2, admin: 3, owner: 4 } as const;
+
+async function requireDashboardAccess(
+  dashboardId: number,
+  userId: number,
+  required: RequiredAccess
+) {
+  const permission = await dashboardDb.getDashboardPermission(dashboardId, userId);
+  if (!permission || permissionRank[permission] < permissionRank[required]) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "You do not have access to this dashboard" });
+  }
+  return permission;
+}
+
 export const dashboardsRouter = router({
-  /**
-   * Create custom dashboard
-   */
   createDashboard: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(1).max(255),
-        description: z.string().optional(),
-        layout: z.any(),
-        widgets: z.array(z.any()),
-        teamId: z.number().optional(),
-      })
-    )
+    .input(z.object({
+      name: z.string().trim().min(1).max(255),
+      description: z.string().max(2000).optional(),
+      layout: z.record(z.string(), z.unknown()),
+      widgets: z.array(z.unknown()),
+      teamId: z.number().int().positive().optional(),
+    }))
     .mutation(async ({ ctx, input }) => {
-      try {
-        const dashboard = await dashboardDb.createCustomDashboard(
-          ctx.user.id,
-          input.name,
-          input.layout,
-          input.widgets,
-          input.teamId,
-          input.description
-        );
-        return { success: true, dashboard };
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Failed to create dashboard",
-        });
-      }
+      const dashboard = await dashboardDb.createCustomDashboard(
+        ctx.user.id,
+        input.name,
+        input.layout,
+        input.widgets,
+        input.teamId,
+        input.description
+      );
+      return { success: true, dashboard };
     }),
 
-  /**
-   * Get user's dashboards
-   */
-  getUserDashboards: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const dashboards = await dashboardDb.getUserDashboards(ctx.user.id);
-      return dashboards;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch dashboards",
-      });
-    }
-  }),
+  getUserDashboards: protectedProcedure.query(({ ctx }) =>
+    dashboardDb.getUserDashboards(ctx.user.id)
+  ),
 
-  /**
-   * Get dashboard by ID
-   */
   getDashboard: protectedProcedure
-    .input(z.object({ dashboardId: z.number() }))
+    .input(z.object({ dashboardId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
-      try {
-        const dashboard = await dashboardDb.getDashboardById(input.dashboardId);
-        if (!dashboard) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Dashboard not found",
-          });
-        }
-
-        // Increment view count
-        await dashboardDb.incrementDashboardViews(input.dashboardId);
-
-        return dashboard;
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch dashboard",
-        });
-      }
+      await requireDashboardAccess(input.dashboardId, ctx.user.id, "view");
+      const dashboard = await dashboardDb.getDashboardById(input.dashboardId);
+      if (!dashboard) throw new TRPCError({ code: "NOT_FOUND", message: "Dashboard not found" });
+      await dashboardDb.incrementDashboardViews(input.dashboardId);
+      return dashboard;
     }),
 
-  /**
-   * Update dashboard
-   */
   updateDashboard: protectedProcedure
-    .input(
-      z.object({
-        dashboardId: z.number(),
-        name: z.string().optional(),
-        description: z.string().optional(),
-        layout: z.any().optional(),
-        widgets: z.array(z.any()).optional(),
-        isPublic: z.number().optional(),
-      })
-    )
+    .input(z.object({
+      dashboardId: z.number().int().positive(),
+      name: z.string().trim().min(1).max(255).optional(),
+      description: z.string().max(2000).optional(),
+      layout: z.record(z.string(), z.unknown()).optional(),
+      widgets: z.array(z.unknown()).optional(),
+      isPublic: z.union([z.literal(0), z.literal(1)]).optional(),
+    }))
     .mutation(async ({ ctx, input }) => {
-      try {
-        const dashboard = await dashboardDb.updateDashboard(input.dashboardId, {
-          name: input.name,
-          description: input.description,
-          layout: input.layout,
-          widgets: input.widgets,
-          isPublic: input.isPublic,
-        });
-        return { success: true, dashboard };
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Failed to update dashboard",
-        });
-      }
+      await requireDashboardAccess(input.dashboardId, ctx.user.id, "edit");
+      const dashboard = await dashboardDb.updateDashboard(input.dashboardId, {
+        name: input.name,
+        description: input.description,
+        layout: input.layout,
+        widgets: input.widgets,
+        isPublic: input.isPublic,
+      });
+      return { success: true, dashboard };
     }),
 
-  /**
-   * Delete dashboard
-   */
   deleteDashboard: protectedProcedure
-    .input(z.object({ dashboardId: z.number() }))
+    .input(z.object({ dashboardId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
-      try {
-        await dashboardDb.deleteDashboard(input.dashboardId);
-        return { success: true };
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Failed to delete dashboard",
-        });
-      }
+      await requireDashboardAccess(input.dashboardId, ctx.user.id, "admin");
+      await dashboardDb.deleteDashboard(input.dashboardId);
+      return { success: true };
     }),
 
-  /**
-   * Share dashboard
-   */
   shareDashboard: protectedProcedure
-    .input(
-      z.object({
-        dashboardId: z.number(),
-        sharedWithUserId: z.number().optional(),
-        sharedWithTeamId: z.number().optional(),
-        permission: z.enum(["view", "edit", "admin"]).default("view"),
-      })
-    )
+    .input(z.object({
+      dashboardId: z.number().int().positive(),
+      sharedWithUserId: z.number().int().positive().optional(),
+      sharedWithTeamId: z.number().int().positive().optional(),
+      permission: z.enum(["view", "edit", "admin"]).default("view"),
+    }).refine(
+      (value) => Boolean(value.sharedWithUserId) !== Boolean(value.sharedWithTeamId),
+      { message: "Choose exactly one user or team to share with" }
+    ))
     .mutation(async ({ ctx, input }) => {
-      try {
-        const sharing = await dashboardDb.shareDashboard(
-          input.dashboardId,
-          ctx.user.id,
-          input.sharedWithUserId,
-          input.sharedWithTeamId,
-          input.permission
-        );
-        return { success: true, sharing };
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Failed to share dashboard",
-        });
-      }
+      await requireDashboardAccess(input.dashboardId, ctx.user.id, "admin");
+      const sharing = await dashboardDb.shareDashboard(
+        input.dashboardId,
+        ctx.user.id,
+        input.sharedWithUserId,
+        input.sharedWithTeamId,
+        input.permission
+      );
+      return { success: true, sharing };
     }),
 
-  /**
-   * Get shared dashboards
-   */
-  getSharedDashboards: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const dashboards = await dashboardDb.getSharedDashboards(ctx.user.id);
-      return dashboards;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch shared dashboards",
-      });
-    }
-  }),
+  getSharedDashboards: protectedProcedure.query(({ ctx }) =>
+    dashboardDb.getSharedDashboards(ctx.user.id)
+  ),
 
-  /**
-   * Get user preferences
-   */
-  getUserPreferences: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const prefs = await dashboardDb.getUserPreferences(ctx.user.id);
-      return prefs;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch preferences",
-      });
-    }
-  }),
+  getUserPreferences: protectedProcedure.query(({ ctx }) =>
+    dashboardDb.getUserPreferences(ctx.user.id)
+  ),
 
-  /**
-   * Update user preferences
-   */
   updateUserPreferences: protectedProcedure
-    .input(
-      z.object({
-        theme: z.enum(["light", "dark", "auto"]).optional(),
-        timezone: z.string().optional(),
-        language: z.string().optional(),
-        dateFormat: z.string().optional(),
-        currencySymbol: z.string().optional(),
-        emailNotifications: z.number().optional(),
-        defaultDashboardId: z.number().optional(),
-        autoRefreshInterval: z.number().optional(),
-      })
-    )
+    .input(z.object({
+      theme: z.enum(["light", "dark", "auto"]).optional(),
+      timezone: z.string().max(64).optional(),
+      language: z.string().max(10).optional(),
+      dateFormat: z.string().max(20).optional(),
+      currencySymbol: z.string().max(5).optional(),
+      emailNotifications: z.union([z.literal(0), z.literal(1)]).optional(),
+      defaultDashboardId: z.number().int().positive().optional(),
+      autoRefreshInterval: z.number().int().min(0).max(86400).optional(),
+    }))
     .mutation(async ({ ctx, input }) => {
-      try {
-        const prefs = await dashboardDb.updateUserPreferences(ctx.user.id, input);
-        return { success: true, preferences: prefs[0] };
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Failed to update preferences",
-        });
+      if (input.defaultDashboardId) {
+        await requireDashboardAccess(input.defaultDashboardId, ctx.user.id, "view");
       }
+      const preferences = await dashboardDb.updateUserPreferences(ctx.user.id, input);
+      return { success: true, preferences: preferences[0] };
     }),
 });
