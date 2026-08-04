@@ -1,4 +1,5 @@
 import { router, protectedProcedure } from "../_core/trpc";
+import { isTeamAdmin } from "../_core/authorization";
 import { z } from "zod";
 import * as teamDb from "../db/teams";
 import { TRPCError } from "@trpc/server";
@@ -13,7 +14,7 @@ async function requireMembership(teamId: number, userId: number) {
 
 async function requireAdmin(teamId: number, userId: number) {
   const membership = await requireMembership(teamId, userId);
-  if (membership.role !== "admin") {
+  if (!isTeamAdmin(membership)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Only team admins can perform this action" });
   }
   return membership;
