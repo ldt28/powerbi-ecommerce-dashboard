@@ -58,6 +58,16 @@ export const dashboardsRouter = router({
     .input(z.object({ dashboardId: z.number() }))
     .query(async ({ ctx, input }) => {
       try {
+        const accessLevel = await dashboardDb.getDashboardAccessLevel(input.dashboardId, ctx.user.id);
+        // "none" covers both "doesn't exist" and "exists but you can't see it" ---
+        // reporting them the same way avoids leaking which dashboard IDs are in use.
+        if (accessLevel === "none") {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Dashboard not found",
+          });
+        }
+
         const dashboard = await dashboardDb.getDashboardById(input.dashboardId);
         if (!dashboard) {
           throw new TRPCError({
@@ -95,6 +105,17 @@ export const dashboardsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
+        const accessLevel = await dashboardDb.getDashboardAccessLevel(input.dashboardId, ctx.user.id);
+        if (accessLevel === "none") {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Dashboard not found" });
+        }
+        if (accessLevel === "view") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You do not have permission to edit this dashboard",
+          });
+        }
+
         const dashboard = await dashboardDb.updateDashboard(input.dashboardId, {
           name: input.name,
           description: input.description,
@@ -104,6 +125,7 @@ export const dashboardsRouter = router({
         });
         return { success: true, dashboard };
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: error instanceof Error ? error.message : "Failed to update dashboard",
@@ -118,9 +140,24 @@ export const dashboardsRouter = router({
     .input(z.object({ dashboardId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       try {
+        const accessLevel = await dashboardDb.getDashboardAccessLevel(input.dashboardId, ctx.user.id);
+        if (accessLevel === "none") {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Dashboard not found" });
+        }
+        // Deletion is intentionally owner-only, even for users with "edit" access
+        // through a team or a share --- sharing edit rights shouldn't imply the
+        // ability to destroy the dashboard for everyone else.
+        if (accessLevel !== "owner") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Only the dashboard owner can delete it",
+          });
+        }
+
         await dashboardDb.deleteDashboard(input.dashboardId);
         return { success: true };
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: error instanceof Error ? error.message : "Failed to delete dashboard",

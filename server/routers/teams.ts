@@ -55,6 +55,16 @@ export const teamsRouter = router({
             message: "Team not found",
           });
         }
+
+        // This previously returned any team's details to any authenticated
+        // user, since nothing checked the caller was actually part of it.
+        if (!(await teamDb.hasTeamAccess(input.teamId, ctx.user.id))) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Team not found",
+          });
+        }
+
         return team;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -72,9 +82,17 @@ export const teamsRouter = router({
     .input(z.object({ teamId: z.number() }))
     .query(async ({ ctx, input }) => {
       try {
+        if (!(await teamDb.hasTeamAccess(input.teamId, ctx.user.id))) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You are not a member of this team",
+          });
+        }
+
         const members = await teamDb.getTeamMembers(input.teamId);
         return members;
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch team members",
@@ -174,9 +192,17 @@ export const teamsRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
+        if (!(await teamDb.hasTeamAccess(input.teamId, ctx.user.id))) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You are not a member of this team",
+          });
+        }
+
         const logs = await teamDb.getTeamActivityLog(input.teamId, input.limit);
         return logs;
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch activity log",

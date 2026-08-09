@@ -204,6 +204,34 @@ export async function getTeamMembers(teamId: number) {
 }
 
 /**
+ * Whether userId has access to teamId at all: owner, or an accepted member.
+ * Callers that only need "can this person see the team" (as opposed to the
+ * admin-only checks already enforced deeper in updateTeamMemberRole /
+ * removeTeamMember) should gate on this before returning team-scoped data.
+ */
+export async function hasTeamAccess(teamId: number, userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database connection failed");
+
+  const team = await db.select().from(teams).where(eq(teams.id, teamId)).limit(1);
+  if (team.length && team[0].ownerId === userId) return true;
+
+  const membership = await db
+    .select()
+    .from(teamMembers)
+    .where(
+      and(
+        eq(teamMembers.teamId, teamId),
+        eq(teamMembers.userId, userId),
+        eq(teamMembers.status, "accepted")
+      )
+    )
+    .limit(1);
+
+  return membership.length > 0;
+}
+
+/**
  * Log team activity
  */
 export async function logTeamActivity(

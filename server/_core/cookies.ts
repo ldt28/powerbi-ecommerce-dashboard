@@ -1,4 +1,5 @@
 import type { CookieOptions, Request } from "express";
+import { ENV } from "./env";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
@@ -42,7 +43,12 @@ export function getSessionCookieOptions(
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    // "lax" still allows the cookie on normal top-level navigations (e.g. an OAuth
+    // provider redirecting back to us) while blocking it on cross-site subrequests,
+    // which is what actually protects against CSRF here. "none" sent it everywhere.
+    sameSite: "lax",
+    // Always require HTTPS in production regardless of how the request was proxied,
+    // so a misconfigured proxy can't silently downgrade session cookies to plain HTTP.
+    secure: ENV.isProduction || isSecureRequest(req),
   };
 }

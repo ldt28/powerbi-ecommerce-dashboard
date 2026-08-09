@@ -1,14 +1,40 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { teams, teamMembers, teamInvitations, activityLog, sharedDashboards, dashboardAccess } from "../../drizzle/schema";
+import { teams, teamMembers, teamInvitations, activityLog, sharedDashboards, dashboardAccess, customDashboards } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { getDashboardAccessLevel } from "../db/dashboards";
 
 /**
  * Team Management Router
  * Handles team creation, member management, invitations, and activity logging
  */
+
+/**
+ * Accepted team membership row for (teamId, userId), or null. Every endpoint
+ * below that takes a bare teamId must check this before returning or
+ * mutating anything scoped to that team --- several previously didn't, which
+ * let any authenticated user read (or in one case, act on) any other team's
+ * data just by guessing/incrementing the teamId.
+ */
+async function getMembership(db: Awaited<ReturnType<typeof getDb>>, teamId: number, userId: number) {
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+  const rows = await db
+    .select()
+    .from(teamMembers)
+    .where(
+      and(
+        eq(teamMembers.teamId, teamId),
+        eq(teamMembers.userId, userId),
+        eq(teamMembers.status, "accepted")
+      )
+    )
+    .limit(1);
+
+  return rows[0] || null;
+}
 
 export const teamRouter = router({
   /**
@@ -83,12 +109,14 @@ export const teamRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
       }
 
-      const hasAccess =
-        team[0].ownerId === ctx.user.id ||
-        (await db
-          .select()
-          .from(teamMembers)
-          .where(and(eq(teamMembers.teamId, input.teamId), eq(teamMembers.userId, ctx.user.id))));
+      // NOTE: the previous version of this check was
+      //   team[0].ownerId === ctx.user.id || (await db.select()...)
+      // which is always truthy once you reach the second operand, because a
+      // Drizzle select() always resolves to an array object --- even an empty
+      // one is truthy in JS. That silently let any authenticated user view
+      // any team's details. Checking `.length` fixes it.
+      const membership = await getMembership(db, input.teamId, ctx.user.id);
+      const hasAccess = team[0].ownerId === ctx.user.id || membership !== null;
 
       if (!hasAccess) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -105,6 +133,13 @@ export const teamRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return [];
+
+      const team = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+      const isOwner = team.length > 0 && team[0].ownerId === ctx.user.id;
+
+      if (!isOwner && !(await getMembership(db, input.teamId, ctx.user.id))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You are not a member of this team" });
+      }
 
       const members = await db
         .select()
@@ -310,6 +345,13 @@ export const teamRouter = router({
       const db = await getDb();
       if (!db) return [];
 
+      const team = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+      const isOwner = team.length > 0 && team[0].ownerId === ctx.user.id;
+
+      if (!isOwner && !(await getMembership(db, input.teamId, ctx.user.id))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You are not a member of this team" });
+      }
+
       const logs = await db
         .select()
         .from(activityLog)
@@ -336,6 +378,13 @@ export const teamRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const team = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+      const isOwner = team.length > 0 && team[0].ownerId === ctx.user.id;
+
+      if (!isOwner && !(await getMembership(db, input.teamId, ctx.user.id))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You are not a member of this team" });
+      }
 
       const dashboard = await db.insert(sharedDashboards).values({
         teamId: input.teamId,
@@ -367,6 +416,13 @@ export const teamRouter = router({
       const db = await getDb();
       if (!db) return [];
 
+      const team = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+      const isOwner = team.length > 0 && team[0].ownerId === ctx.user.id;
+
+      if (!isOwner && !(await getMembership(db, input.teamId, ctx.user.id))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You are not a member of this team" });
+      }
+
       const dashboards = await db
         .select()
         .from(sharedDashboards)
@@ -393,6 +449,17 @@ export const teamRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      // Previously this had no check at all: any authenticated user could grant
+      // themselves (or anyone) access to any dashboardId. Only the dashboard's
+      // owner can hand out access to it.
+      const accessLevel = await getDashboardAccessLevel(input.dashboardId, ctx.user.id);
+      if (accessLevel !== "owner") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only the dashboard owner can grant access to it",
+        });
+      }
 
       const accessData: any = {
         dashboardId: input.dashboardId,
@@ -425,6 +492,11 @@ export const teamRouter = router({
   getDashboardAccess: protectedProcedure
     .input(z.object({ dashboardId: z.number() }))
     .query(async ({ ctx, input }) => {
+      const accessLevel = await getDashboardAccessLevel(input.dashboardId, ctx.user.id);
+      if (accessLevel === "none") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Dashboard not found" });
+      }
+
       const db = await getDb();
       if (!db) return [];
 

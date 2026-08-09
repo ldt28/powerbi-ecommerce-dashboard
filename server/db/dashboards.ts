@@ -1,6 +1,88 @@
 import { getDb } from "../db";
-import { customDashboards, dashboardSharing, userPreferences } from "../../drizzle/schema";
+import { customDashboards, dashboardSharing, userPreferences, teamMembers } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
+
+type AccessLevel = "none" | "view" | "edit" | "owner";
+
+const LEVEL_RANK: Record<AccessLevel, number> = { none: 0, view: 1, edit: 2, owner: 3 };
+
+function maxLevel(a: AccessLevel, b: AccessLevel): AccessLevel {
+  return LEVEL_RANK[a] >= LEVEL_RANK[b] ? a : b;
+}
+
+/**
+ * Work out what a given user is allowed to do with a dashboard: own it,
+ * edit/view it via team membership, edit/view it via an explicit share, or
+ * nothing at all. Every dashboard read/write in this router must call this
+ * first — getDashboardById alone does not check who's asking.
+ */
+export async function getDashboardAccessLevel(
+  dashboardId: number,
+  userId: number
+): Promise<AccessLevel> {
+  const db = await getDb();
+  if (!db) throw new Error("Database connection failed");
+
+  const rows = await db
+    .select()
+    .from(customDashboards)
+    .where(eq(customDashboards.id, dashboardId))
+    .limit(1);
+
+  const dashboard = rows[0];
+  if (!dashboard) return "none";
+
+  if (dashboard.userId === userId) return "owner";
+
+  let level: AccessLevel = dashboard.isPublic === 1 ? "view" : "none";
+
+  if (dashboard.teamId) {
+    const membership = await db
+      .select()
+      .from(teamMembers)
+      .where(
+        and(
+          eq(teamMembers.teamId, dashboard.teamId),
+          eq(teamMembers.userId, userId),
+          eq(teamMembers.status, "accepted")
+        )
+      )
+      .limit(1);
+
+    if (membership.length) {
+      level = maxLevel(level, membership[0].role === "viewer" ? "view" : "edit");
+    }
+  }
+
+  const shares = await db
+    .select()
+    .from(dashboardSharing)
+    .where(eq(dashboardSharing.dashboardId, dashboardId));
+
+  if (shares.length) {
+    const teamShares = shares.filter((s) => s.sharedWithTeamId);
+    let userTeamIds: number[] = [];
+
+    if (teamShares.length) {
+      const memberships = await db
+        .select()
+        .from(teamMembers)
+        .where(and(eq(teamMembers.userId, userId), eq(teamMembers.status, "accepted")));
+      userTeamIds = memberships.map((m) => m.teamId);
+    }
+
+    for (const share of shares) {
+      const appliesToUser =
+        share.sharedWithUserId === userId ||
+        (share.sharedWithTeamId != null && userTeamIds.includes(share.sharedWithTeamId));
+      if (!appliesToUser) continue;
+
+      level = maxLevel(level, share.permission === "view" ? "view" : "edit");
+    }
+  }
+
+  return level;
+}
 
 /**
  * Create a custom dashboard

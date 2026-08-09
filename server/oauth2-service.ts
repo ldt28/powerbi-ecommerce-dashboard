@@ -2,6 +2,21 @@ import { getDb } from "./db";
 import { oauth2Tokens, InsertOAuth2Token } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
+import { TokenEncryption } from "./utils/encryption";
+
+/**
+ * Decrypt helper that treats a bad/legacy value as "unusable" instead of
+ * throwing, so a token stored before encryption was wired up (or a corrupted
+ * row) surfaces as a clear "please reconnect" error instead of a crypto crash.
+ */
+function tryDecrypt(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    return TokenEncryption.decrypt(value);
+  } catch {
+    return null;
+  }
+}
 
 /**
  * OAuth2 Service
@@ -225,9 +240,13 @@ export class OAuth2Service {
     return db.insert(oauth2Tokens).values({
       userId,
       platform,
-      accessToken: tokenResponse.access_token,
-      refreshToken: tokenResponse.refresh_token || null,
-      idToken: tokenResponse.id_token || null,
+      // Tokens are encrypted at rest (AES-256-GCM) since this table holds live
+      // credentials for every connected platform. Never store these raw.
+      accessToken: TokenEncryption.encrypt(tokenResponse.access_token),
+      refreshToken: tokenResponse.refresh_token
+        ? TokenEncryption.encrypt(tokenResponse.refresh_token)
+        : null,
+      idToken: tokenResponse.id_token ? TokenEncryption.encrypt(tokenResponse.id_token) : null,
       tokenType: tokenResponse.token_type,
       expiresAt,
       scope,
@@ -240,7 +259,7 @@ export class OAuth2Service {
   }
 
   /**
-   * Get stored OAuth2 token
+   * Get stored OAuth2 token (decrypted)
    */
   static async getToken(userId: number, platform: string) {
     const db = await getDb();
@@ -252,7 +271,24 @@ export class OAuth2Service {
       .where(and(eq(oauth2Tokens.userId, userId), eq(oauth2Tokens.platform, platform)))
       .limit(1);
 
-    return tokens[0] || null;
+    const token = tokens[0];
+    if (!token) return null;
+
+    const accessToken = tryDecrypt(token.accessToken);
+    if (accessToken === null) {
+      // Most likely a token that was written before encryption was enabled,
+      // or the ENCRYPTION_KEY changed. Either way it's not usable as-is.
+      throw new Error(
+        `Stored ${platform} token could not be decrypted and is unusable. Please reconnect this platform.`
+      );
+    }
+
+    return {
+      ...token,
+      accessToken,
+      refreshToken: tryDecrypt(token.refreshToken),
+      idToken: tryDecrypt(token.idToken),
+    };
   }
 
   /**
@@ -285,11 +321,15 @@ export class OAuth2Service {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      // token.refreshToken is already decrypted here (getToken decrypts on read),
+      // so re-encrypt before persisting the refreshed values.
+      const refreshTokenPlain = newTokenResponse.refresh_token || token.refreshToken;
+
       await db
         .update(oauth2Tokens)
         .set({
-          accessToken: newTokenResponse.access_token,
-          refreshToken: newTokenResponse.refresh_token || token.refreshToken,
+          accessToken: TokenEncryption.encrypt(newTokenResponse.access_token),
+          refreshToken: refreshTokenPlain ? TokenEncryption.encrypt(refreshTokenPlain) : null,
           expiresAt,
           lastRefreshedAt: new Date(),
           refreshAttempts: 0,
@@ -360,16 +400,23 @@ export class OAuth2Service {
   }
 
   /**
-   * List all OAuth2 tokens for a user
+   * List all OAuth2 tokens for a user (decrypted)
    */
   static async listTokens(userId: number) {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
-    return db
+    const tokens = await db
       .select()
       .from(oauth2Tokens)
       .where(eq(oauth2Tokens.userId, userId));
+
+    return tokens.map((token) => ({
+      ...token,
+      accessToken: tryDecrypt(token.accessToken),
+      refreshToken: tryDecrypt(token.refreshToken),
+      idToken: tryDecrypt(token.idToken),
+    }));
   }
 
   /**
