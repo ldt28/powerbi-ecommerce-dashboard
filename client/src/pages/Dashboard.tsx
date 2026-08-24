@@ -19,6 +19,7 @@ import DashboardComparison from "@/components/dashboard/DashboardComparison";
 import Social from "./Social";
 import AnalyticsDashboard from "./AnalyticsDashboard";
 import PlatformConnections from "./PlatformConnections";
+import AiAdvisor from "./AiAdvisor";
 
 const Dashboard: FC = () => {
   const { user, loading } = useAuth();
@@ -50,6 +51,7 @@ const Dashboard: FC = () => {
       <Switch>
         <Route path="/dashboard" component={RevenueOverview} />
         <Route path="/dashboard/revenue" component={RevenueOverview} />
+        <Route path="/dashboard/ai-advisor" component={AiAdvisor} />
         <Route path="/dashboard/realtime" component={RealtimeSales} />
         <Route path="/dashboard/marketing" component={MarketingPerformance} />
         <Route path="/dashboard/products" component={ProductAnalysis} />

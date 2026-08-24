@@ -10,7 +10,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import { Search, Home, Settings, HelpCircle, LogOut } from "lucide-react";
+import { Search, Home, Settings, HelpCircle, LogOut, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -61,6 +61,18 @@ export function CommandPalette() {
       shortcut: "⌘D",
       action: () => {
         navigate("/dashboard");
+        setOpen(false);
+      },
+      category: "navigation",
+    },
+    {
+      id: "nav-ai-advisor",
+      label: "Go to EcomAI Advisor",
+      description: "Ask AI questions & view executive briefings",
+      icon: <Sparkles className="h-4 w-4 text-primary" />,
+      shortcut: "⌘A",
+      action: () => {
+        navigate("/ai-advisor");
         setOpen(false);
       },
       category: "navigation",

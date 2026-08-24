@@ -33,6 +33,7 @@ import BigCommerceSetup from "./pages/BigCommerceSetup";
 import SharedDashboards from "./pages/SharedDashboards";
 import CustomDashboards from "./pages/CustomDashboards";
 import ComponentShowcase from "./pages/ComponentShowcase";
+import AiAdvisor from "./pages/AiAdvisor";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -57,6 +58,7 @@ function Router() {
       <Route path="/custom-dashboards" component={CustomDashboards} />
       <Route path="/shared-dashboards" component={SharedDashboards} />
       <Route path="/components" component={ComponentShowcase} />
+      <Route path="/ai-advisor" component={AiAdvisor} />
       <Route path="/settings" component={Settings} />
       <Route path="/help" component={Help} />
       <Route path="/marketplace-comparison" component={MarketplaceComparison} />

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Mail, Zap, Database, BarChart3, Share2, Settings, Search, History, UserCheck, Palette, Bell } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Mail, Zap, Database, BarChart3, Share2, Settings, Search, History, UserCheck, Palette, Bell, Sparkles } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -30,6 +30,7 @@ import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Revenue Overview", path: "/dashboard" },
+  { icon: Sparkles, label: "EcomAI Advisor", path: "/ai-advisor" },
   { icon: Zap, label: "Realtime Sales", path: "/dashboard/realtime" },
   { icon: BarChart3, label: "Channels", path: "/dashboard/channels" },
   { icon: Users, label: "Marketing Performance", path: "/dashboard/marketing" },

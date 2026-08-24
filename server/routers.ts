@@ -35,6 +35,7 @@ import { analyticsAggregationRouter } from "./routers/analytics-aggregation";
 import { notificationsRouter } from "./routers/notifications";
 import { oauth2Router } from "./routers/oauth2";
 import { realtimeRouter } from "./routers/realtime";
+import { aiAdvisorRouter } from "./routers/ai-advisor";
 
 export const appRouter = router({
   system: systemRouter,
@@ -298,6 +299,8 @@ export const appRouter = router({
   oauth2: oauth2Router,
   // Realtime router
   realtime: realtimeRouter,
+  // AI-Powered E-Commerce Advisor router
+  aiAdvisor: aiAdvisorRouter,
 });
 
 export type AppRouter = typeof appRouter;
