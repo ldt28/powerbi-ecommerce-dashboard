@@ -9,18 +9,19 @@ export async function createTeam(userId: number, teamName: string, description?:
   const db = await getDb();
   if (!db) throw new Error("Database connection failed");
 
-  const [team] = await db
+  const res = await db
     .insert(teams)
     .values({
       name: teamName,
       description,
       ownerId: userId,
-    })
-    .returning();
+    });
+
+  const teamId = (res as any)[0]?.insertId || 1;
 
   // Add owner as admin member
   await db.insert(teamMembers).values({
-    teamId: team.id,
+    teamId,
     userId,
     role: "admin",
     status: "accepted",
@@ -28,9 +29,9 @@ export async function createTeam(userId: number, teamName: string, description?:
   });
 
   // Log activity
-  await logTeamActivity(team.id, userId, "TEAM_CREATED", "team", team.id, { teamName });
+  await logTeamActivity(teamId, userId, "TEAM_CREATED", "team", teamId, { teamName });
 
-  return team;
+  return { id: teamId, name: teamName, description, ownerId: userId };
 }
 
 /**
@@ -113,7 +114,7 @@ export async function addTeamMember(
     throw new Error("User is already a member of this team");
   }
 
-  const [member] = await db
+  const res = await db
     .insert(teamMembers)
     .values({
       teamId,
@@ -122,13 +123,14 @@ export async function addTeamMember(
       status: "accepted",
       acceptedAt: new Date(),
       invitedBy,
-    })
-    .returning();
+    });
+
+  const memberId = (res as any)[0]?.insertId || 1;
 
   // Log activity
-  await logTeamActivity(teamId, invitedBy, "MEMBER_ADDED", "team_member", member.id, { userId, role });
+  await logTeamActivity(teamId, invitedBy, "MEMBER_ADDED", "team_member", memberId, { userId, role });
 
-  return member;
+  return { id: memberId, teamId, userId, role, status: "accepted" };
 }
 
 /**

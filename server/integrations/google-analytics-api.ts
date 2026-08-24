@@ -1,5 +1,4 @@
 import { google } from "googleapis";
-import { OAuth2Client } from "google-auth-library";
 
 /**
  * Google Analytics API Integration Service
@@ -39,7 +38,7 @@ export interface AnalyticsDimensions {
 
 export class GoogleAnalyticsService {
   private analyticsClient: any;
-  private oauth2Client: OAuth2Client;
+  private oauth2Client: any;
 
   constructor(accessToken: string, refreshToken?: string) {
     this.oauth2Client = new google.auth.OAuth2(

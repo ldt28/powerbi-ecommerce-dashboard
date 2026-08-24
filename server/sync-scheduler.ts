@@ -1,9 +1,10 @@
 import { getDb } from "./db";
 import { apiConnections, oauth2Tokens } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import GoogleAnalyticsService from "./integrations/google-analytics-api";
 import FacebookAdsService from "./integrations/facebook-ads-api";
 import YouTubeAnalyticsService from "./integrations/youtube-analytics-api";
+import { OAuth2Service } from "./oauth2-service";
 
 /**
  * Data Sync Scheduler Service
@@ -170,25 +171,20 @@ class SyncScheduler {
         throw new Error("Database connection failed");
       }
 
-      const connection = await dbInstance
-        .select()
-        .from(apiConnections)
-        .where(eq(apiConnections.userId, job.userId))
-        .limit(1);
-
-      if (!connection || connection.length === 0) {
-        throw new Error("Connection not found");
+      // Get OAuth token if available (with auto-refresh & decryption)
+      let token: any = null;
+      try {
+        token = await OAuth2Service.ensureValidToken(job.userId, job.platform);
+      } catch (err) {
+        try {
+          token = await OAuth2Service.getToken(job.userId, job.platform);
+        } catch {
+          token = null;
+        }
       }
 
-      // Get OAuth token if available
-      const token = await dbInstance
-        .select()
-        .from(oauth2Tokens)
-        .where(eq(oauth2Tokens.userId, job.userId))
-        .limit(1);
-
       // Execute platform-specific sync
-      await this.syncPlatformData(job.platform, job.userId, token?.[0], dbInstance);
+      await this.syncPlatformData(job.platform, job.userId, token, dbInstance);
 
       job.status = "success";
       job.error = undefined;
@@ -270,20 +266,30 @@ class SyncScheduler {
         token.refreshToken
       );
 
-      // Get property ID from connection
+      // Get property ID from platform connection or token accountId
       const connection = await db
         .select()
         .from(apiConnections)
-        .where(eq(apiConnections.userId, userId))
+        .where(
+          and(
+            eq(apiConnections.userId, userId),
+            eq(apiConnections.platform, "google")
+          )
+        )
         .limit(1);
 
-      if (!connection || !connection[0]) {
-        throw new Error("Connection not found");
+      let propertyId = token.accountId;
+      if (connection && connection[0]?.metadata) {
+        try {
+          const meta = JSON.parse(connection[0].metadata);
+          if (meta.propertyId) propertyId = meta.propertyId;
+        } catch {
+          // Ignore JSON parse error
+        }
       }
 
-      const propertyId = connection[0].credentials?.propertyId;
       if (!propertyId) {
-        throw new Error("Property ID not found in connection credentials");
+        throw new Error("Property ID not found for Google Analytics connection");
       }
 
       // Fetch metrics for the last 30 days
@@ -314,20 +320,30 @@ class SyncScheduler {
 
       const fbService = new FacebookAdsService(token.accessToken);
 
-      // Get ad account ID from connection
+      // Get ad account ID from connection or token
       const connection = await db
         .select()
         .from(apiConnections)
-        .where(eq(apiConnections.userId, userId))
+        .where(
+          and(
+            eq(apiConnections.userId, userId),
+            eq(apiConnections.platform, "facebook")
+          )
+        )
         .limit(1);
 
-      if (!connection || !connection[0]) {
-        throw new Error("Connection not found");
+      let adAccountId = token.accountId;
+      if (connection && connection[0]?.metadata) {
+        try {
+          const meta = JSON.parse(connection[0].metadata);
+          if (meta.adAccountId) adAccountId = meta.adAccountId;
+        } catch {
+          // Ignore JSON parse error
+        }
       }
 
-      const adAccountId = connection[0].credentials?.adAccountId;
       if (!adAccountId) {
-        throw new Error("Ad Account ID not found in connection credentials");
+        throw new Error("Ad Account ID not found for Facebook connection");
       }
 
       // Fetch metrics for the last 30 days

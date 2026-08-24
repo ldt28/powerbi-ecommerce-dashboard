@@ -1,7 +1,6 @@
 import GoogleAnalyticsClient, { GoogleAnalyticsConfig } from "./google-analytics";
 import FacebookAdsClient, { FacebookAdsConfig } from "./facebook-ads";
 import YouTubeAnalyticsClient, { YouTubeConfig } from "./youtube";
-import type { Database } from "drizzle-orm/mysql-core";
 
 /**
  * Platform API Sync Service
@@ -44,7 +43,7 @@ class PlatformSyncService {
     connectionId: number,
     startDate: string,
     endDate: string,
-    db?: Database
+    db?: any
   ): Promise<SyncResult> {
     const startedAt = new Date();
     let recordsSync = 0;
@@ -118,7 +117,7 @@ class PlatformSyncService {
     connectionId: number,
     startDate: string,
     endDate: string,
-    db?: Database
+    db?: any
   ): Promise<SyncResult> {
     const startedAt = new Date();
     let recordsSync = 0;
@@ -191,7 +190,7 @@ class PlatformSyncService {
     connectionId: number,
     startDate: string,
     endDate: string,
-    db?: Database
+    db?: any
   ): Promise<SyncResult> {
     const startedAt = new Date();
     let recordsSync = 0;
@@ -256,7 +255,7 @@ class PlatformSyncService {
    * Store Google Analytics data in database
    */
   private async storeGoogleAnalyticsData(
-    db: Database,
+    db: any,
     connectionId: number,
     data: any[]
   ): Promise<void> {
@@ -271,7 +270,7 @@ class PlatformSyncService {
    * Store Facebook Ads data in database
    */
   private async storeFacebookAdsData(
-    db: Database,
+    db: any,
     connectionId: number,
     data: any[]
   ): Promise<void> {
@@ -286,7 +285,7 @@ class PlatformSyncService {
    * Store YouTube data in database
    */
   private async storeYouTubeData(
-    db: Database,
+    db: any,
     connectionId: number,
     data: any[]
   ): Promise<void> {
@@ -332,13 +331,17 @@ class PlatformSyncService {
     for (let i = 0; i < syncTasks.length; i += this.batchSize) {
       const batch = syncTasks.slice(i, i + this.batchSize);
       const batchResults = await Promise.all(
-        batch.map((task) => task().catch((error) => ({
-          status: "error",
-          error: error.message,
-          recordsSync: 0,
-          startedAt: new Date(),
-          completedAt: new Date(),
-        })))
+        batch.map((task) =>
+          task().catch((error): SyncResult => ({
+            platform: "unknown",
+            connectionId: 0,
+            status: "error",
+            error: error instanceof Error ? error.message : String(error),
+            recordsSync: 0,
+            startedAt: new Date(),
+            completedAt: new Date(),
+          }))
+        )
       );
       results.push(...batchResults);
     }

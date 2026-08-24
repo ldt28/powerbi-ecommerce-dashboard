@@ -52,7 +52,7 @@ export function determineSeverity(
   const deviation = Math.abs(currentValue - normalValue);
   const deviationPercent = (deviation / normalValue) * 100;
 
-  if (deviationPercent > 50) return "critical";
+  if (deviationPercent >= 50) return "critical";
   if (deviationPercent > 30) return "high";
   if (deviationPercent > 15) return "medium";
   return "low";

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Mail, Zap, Database, BarChart3, Share2, Settings } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Mail, Zap, Database, BarChart3, Share2, Settings, Search, History, UserCheck, Palette, Bell } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -29,17 +29,25 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: Zap, label: "Channels", path: "/dashboard/channels" },
   { icon: LayoutDashboard, label: "Revenue Overview", path: "/dashboard" },
+  { icon: Zap, label: "Realtime Sales", path: "/dashboard/realtime" },
+  { icon: BarChart3, label: "Channels", path: "/dashboard/channels" },
   { icon: Users, label: "Marketing Performance", path: "/dashboard/marketing" },
   { icon: LayoutDashboard, label: "Product Analysis", path: "/dashboard/products" },
   { icon: Users, label: "Customer Analytics", path: "/dashboard/customers" },
   { icon: Mail, label: "Email Marketing", path: "/dashboard/email" },
   { icon: Share2, label: "Social", path: "/dashboard/social" },
   { icon: BarChart3, label: "Comparison", path: "/dashboard/comparison" },
+  { icon: BarChart3, label: "Marketplace Comparison", path: "/marketplace-comparison" },
   { icon: Database, label: "Data Management", path: "/dashboard/data" },
-  { icon: BarChart3, label: "Analytics", path: "/dashboard/analytics" },
+  { icon: BarChart3, label: "Analytics Engine", path: "/dashboard/analytics" },
   { icon: Zap, label: "Connections", path: "/dashboard/connections" },
+  { icon: Share2, label: "Shared Dashboards", path: "/shared-dashboards" },
+  { icon: LayoutDashboard, label: "Custom Dashboards", path: "/custom-dashboards" },
+  { icon: Search, label: "Search & Filters", path: "/search-filters" },
+  { icon: History, label: "Activity Logs", path: "/activity-logs" },
+  { icon: UserCheck, label: "Team Management", path: "/team-management" },
+  { icon: Palette, label: "Components", path: "/components" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -230,12 +238,26 @@ function DashboardLayoutContent({
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem
+                  onClick={() => setLocation("/settings")}
+                  className="cursor-pointer"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Account Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setLocation("/notification-settings")}
+                  className="cursor-pointer"
+                >
+                  <Bell className="mr-2 h-4 w-4" />
+                  <span>Notification Settings</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setLocation("/team-settings")}
                   className="cursor-pointer"
                 >
-                  <Settings className="mr-2 h-4 w-4" />
+                  <Users className="mr-2 h-4 w-4" />
                   <span>Team Settings</span>
                 </DropdownMenuItem>
                 <div className="px-2 py-2 border-t">

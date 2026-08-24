@@ -1,7 +1,7 @@
 import { protectedProcedure, router } from '../_core/trpc';
 import { z } from 'zod';
-import { db } from '../db';
-import { activityLogs } from '../../drizzle/schema';
+import { getDb } from '../db';
+import { activityLog } from '../../drizzle/schema';
 import { eq, desc, and, gte, lte } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 
@@ -9,24 +9,29 @@ export const activityLogsRouter = router({
   // Log an activity
   logActivity: protectedProcedure
     .input(z.object({
+      teamId: z.number().optional(),
       action: z.string(),
-      resourceType: z.string(),
-      resourceId: z.string().optional(),
-      details: z.record(z.any()).optional(),
-      changes: z.record(z.any()).optional(),
+      resourceType: z.string().optional(),
+      resourceId: z.union([z.string(), z.number()]).optional(),
+      details: z.record(z.string(), z.any()).optional(),
+      changes: z.record(z.string(), z.any()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const [log] = await db.insert(activityLogs).values({
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+      const numericResourceId = input.resourceId ? (typeof input.resourceId === "string" ? parseInt(input.resourceId, 10) : input.resourceId) : undefined;
+
+      const res = await db.insert(activityLog).values({
+        teamId: input.teamId || 1,
         userId: ctx.user.id,
         action: input.action,
         resourceType: input.resourceType,
-        resourceId: input.resourceId,
-        details: input.details,
-        changes: input.changes,
-        timestamp: new Date(),
-      }).returning();
+        resourceId: isNaN(numericResourceId as number) ? undefined : numericResourceId,
+        details: input.details ? JSON.stringify(input.details) : undefined,
+      });
 
-      return log;
+      return { success: true, id: (res as any)[0]?.insertId };
     }),
 
   // Get activity logs with filtering
@@ -34,153 +39,82 @@ export const activityLogsRouter = router({
     .input(z.object({
       limit: z.number().default(50),
       offset: z.number().default(0),
-      userId: z.string().optional(),
+      userId: z.union([z.string(), z.number()]).optional(),
       action: z.string().optional(),
       resourceType: z.string().optional(),
       startDate: z.date().optional(),
       endDate: z.date().optional(),
     }))
     .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { logs: [], total: 0 };
+
       const conditions = [];
 
       if (input.userId) {
-        conditions.push(eq(activityLogs.userId, input.userId));
+        const uid = typeof input.userId === "string" ? parseInt(input.userId, 10) : input.userId;
+        if (!isNaN(uid)) conditions.push(eq(activityLog.userId, uid));
       }
 
       if (input.action) {
-        conditions.push(eq(activityLogs.action, input.action));
+        conditions.push(eq(activityLog.action, input.action));
       }
 
       if (input.resourceType) {
-        conditions.push(eq(activityLogs.resourceType, input.resourceType));
+        conditions.push(eq(activityLog.resourceType, input.resourceType));
       }
 
       if (input.startDate) {
-        conditions.push(gte(activityLogs.timestamp, input.startDate));
+        conditions.push(gte(activityLog.timestamp, input.startDate));
       }
 
       if (input.endDate) {
-        conditions.push(lte(activityLogs.timestamp, input.endDate));
+        conditions.push(lte(activityLog.timestamp, input.endDate));
       }
 
-      const logs = await db.query.activityLogs.findMany({
-        where: conditions.length > 0 ? and(...conditions) : undefined,
-        orderBy: desc(activityLogs.timestamp),
-        limit: input.limit,
-        offset: input.offset,
-      });
-
-      const total = await db.query.activityLogs.findMany({
-        where: conditions.length > 0 ? and(...conditions) : undefined,
-      });
+      const logs = await db
+        .select()
+        .from(activityLog)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(activityLog.timestamp))
+        .limit(input.limit)
+        .offset(input.offset);
 
       return {
-        logs,
-        total: total.length,
-        limit: input.limit,
-        offset: input.offset,
+        logs: logs.map((log) => ({
+          ...log,
+          id: String(log.id),
+          details: log.details ? (typeof log.details === "string" ? JSON.parse(log.details) : log.details) : {},
+          timestamp: log.timestamp.toISOString(),
+        })),
+        total: logs.length,
       };
     }),
 
-  // Get user activity
-  getUserActivity: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      limit: z.number().default(50),
-      offset: z.number().default(0),
-    }))
-    .query(async ({ input }) => {
-      const logs = await db.query.activityLogs.findMany({
-        where: eq(activityLogs.userId, input.userId),
-        orderBy: desc(activityLogs.timestamp),
-        limit: input.limit,
-        offset: input.offset,
-      });
+  // Get activity stats
+  getActivityStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { total: 0, actions: {}, resourceTypes: {}, users: {} };
 
-      return logs;
-    }),
+    const logs = await db.select().from(activityLog).limit(500);
 
-  // Get dashboard activity
-  getDashboardActivity: protectedProcedure
-    .input(z.object({
-      dashboardId: z.string(),
-      limit: z.number().default(50),
-      offset: z.number().default(0),
-    }))
-    .query(async ({ input }) => {
-      const logs = await db.query.activityLogs.findMany({
-        where: and(
-          eq(activityLogs.resourceType, 'dashboard'),
-          eq(activityLogs.resourceId, input.dashboardId)
-        ),
-        orderBy: desc(activityLogs.timestamp),
-        limit: input.limit,
-        offset: input.offset,
-      });
+    const stats = {
+      total: logs.length,
+      actions: {} as Record<string, number>,
+      resourceTypes: {} as Record<string, number>,
+      users: {} as Record<string, number>,
+    };
 
-      return logs;
-    }),
-
-  // Get activity summary
-  getActivitySummary: protectedProcedure
-    .input(z.object({
-      days: z.number().default(7),
-    }))
-    .query(async ({ input }) => {
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - input.days);
-
-      const logs = await db.query.activityLogs.findMany({
-        where: gte(activityLogs.timestamp, startDate),
-        orderBy: desc(activityLogs.timestamp),
-      });
-
-      // Group by action
-      const byAction: Record<string, number> = {};
-      logs.forEach(log => {
-        byAction[log.action] = (byAction[log.action] || 0) + 1;
-      });
-
-      // Group by resource type
-      const byResourceType: Record<string, number> = {};
-      logs.forEach(log => {
-        byResourceType[log.resourceType] = (byResourceType[log.resourceType] || 0) + 1;
-      });
-
-      // Group by user
-      const byUser: Record<string, number> = {};
-      logs.forEach(log => {
-        byUser[log.userId] = (byUser[log.userId] || 0) + 1;
-      });
-
-      return {
-        totalActivities: logs.length,
-        byAction,
-        byResourceType,
-        byUser,
-        logs: logs.slice(0, 20), // Last 20 activities
-      };
-    }),
-
-  // Delete old activity logs (admin only)
-  deleteOldLogs: protectedProcedure
-    .input(z.object({
-      daysOld: z.number().default(90),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      if (ctx.user.role !== 'admin') {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Only admins can delete activity logs',
-        });
+    logs.forEach((log) => {
+      stats.actions[log.action] = (stats.actions[log.action] || 0) + 1;
+      if (log.resourceType) {
+        stats.resourceTypes[log.resourceType] = (stats.resourceTypes[log.resourceType] || 0) + 1;
       }
+      if (log.userId) {
+        stats.users[String(log.userId)] = (stats.users[String(log.userId)] || 0) + 1;
+      }
+    });
 
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - input.daysOld);
-
-      const result = await db.delete(activityLogs)
-        .where(lte(activityLogs.timestamp, cutoffDate));
-
-      return { success: true };
-    }),
+    return stats;
+  }),
 });

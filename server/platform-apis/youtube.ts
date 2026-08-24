@@ -48,7 +48,7 @@ export interface YouTubeChannel {
 }
 
 class YouTubeAnalyticsClient {
-  private oauth2Client: OAuth2Client;
+  private oauth2Client: any;
   private youtubeAnalytics: any;
   private youtube: any;
   private config: YouTubeConfig;
@@ -60,11 +60,11 @@ class YouTubeAnalyticsClient {
       config.clientSecret,
       config.redirectUri
     );
-    this.youtubeAnalytics = google.youtubeAnalytics({
+    this.youtubeAnalytics = (google as any).youtubeAnalytics({
       version: "v2",
       auth: this.oauth2Client,
     });
-    this.youtube = google.youtube({
+    this.youtube = (google as any).youtube({
       version: "v3",
       auth: this.oauth2Client,
     });

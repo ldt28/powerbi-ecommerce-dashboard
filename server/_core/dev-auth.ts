@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { COOKIE_NAME } from "@shared/const";
 
 const DEMO_USER_OPEN_ID = "demo-user-12345";
 const DEMO_USER_NAME = "Demo User";
@@ -13,8 +14,8 @@ const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
  * Creates a demo user and auto-logs them in for development purposes
  */
 export async function setupDevAuth(app: Express) {
-  // Only enable in development mode
-  if (process.env.NODE_ENV !== "development") {
+  // Only enable in non-production mode
+  if (process.env.NODE_ENV === "production") {
     return;
   }
 
@@ -45,7 +46,7 @@ export async function setupDevAuth(app: Express) {
 
       // Set session cookie
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie("manus-session", sessionToken, {
+      res.cookie(COOKIE_NAME, sessionToken, {
         ...cookieOptions,
         maxAge: ONE_YEAR_MS,
       });

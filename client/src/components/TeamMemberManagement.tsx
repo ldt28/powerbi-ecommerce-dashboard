@@ -27,7 +27,7 @@ interface TeamMember {
   email: string;
   role: "admin" | "editor" | "viewer";
   joinedAt: Date;
-  status: "active" | "pending" | "inactive";
+  status: "active" | "pending" | "inactive" | "suspended";
 }
 
 /**
@@ -57,17 +57,19 @@ function RoleBadge({ role }: { role: "admin" | "editor" | "viewer" }) {
 /**
  * Status Badge Component
  */
-function StatusBadge({ status }: { status: "active" | "pending" | "inactive" }) {
+function StatusBadge({ status }: { status: "active" | "pending" | "inactive" | "suspended" }) {
   const colors = {
     active: "bg-green-100 text-green-800",
     pending: "bg-yellow-100 text-yellow-800",
     inactive: "bg-gray-100 text-gray-800",
+    suspended: "bg-red-100 text-red-800",
   };
 
   const icons = {
     active: <CheckCircle className="w-3 h-3" />,
     pending: <Clock className="w-3 h-3" />,
     inactive: null,
+    suspended: null,
   };
 
   return (

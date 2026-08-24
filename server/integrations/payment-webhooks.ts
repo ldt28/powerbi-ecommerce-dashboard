@@ -277,8 +277,9 @@ export class PayPalWebhookHandler {
 
     try {
       const response = await this.client.post('/v1/oauth2/token', 'grant_type=client_credentials');
-      this.accessToken = response.data.access_token;
-      return this.accessToken;
+      const token = (response.data.access_token as string) || '';
+      this.accessToken = token;
+      return token;
     } catch (error) {
       console.error('Error getting PayPal access token:', error);
       throw error;

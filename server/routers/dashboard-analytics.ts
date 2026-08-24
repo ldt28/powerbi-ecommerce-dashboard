@@ -3,12 +3,22 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { salesData, adSpendData } from "../../drizzle/schema";
-import { eq, gte, lte, and, sum, desc } from "drizzle-orm";
+import { eq, gte, lte, and, desc } from "drizzle-orm";
 
 /**
  * Dashboard Analytics Router
  * Procedures for aggregating and filtering analytics data for user-facing dashboard
  */
+
+function getEffectiveUserId(ctx: { user: { id: number; role?: string } }, targetUserId?: number): number {
+  if (targetUserId !== undefined && targetUserId !== ctx.user.id) {
+    if (ctx.user.role === "admin") {
+      return targetUserId;
+    }
+    throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to access another user's analytics" });
+  }
+  return ctx.user.id;
+}
 
 export const dashboardAnalyticsRouter = router({
   /**
@@ -17,15 +27,16 @@ export const dashboardAnalyticsRouter = router({
   getKPIMetrics: protectedProcedure
     .input(
       z.object({
-        userId: z.number(),
+        userId: z.number().optional(),
         startDate: z.date(),
         endDate: z.date(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
+        const userId = getEffectiveUserId(ctx, input.userId);
 
         // Get sales data for date range
         const sales = await db
@@ -33,7 +44,7 @@ export const dashboardAnalyticsRouter = router({
           .from(salesData)
           .where(
             and(
-              eq(salesData.userId, input.userId),
+              eq(salesData.userId, userId),
               gte(salesData.orderDate, input.startDate),
               lte(salesData.orderDate, input.endDate)
             )
@@ -57,7 +68,7 @@ export const dashboardAnalyticsRouter = router({
           .from(salesData)
           .where(
             and(
-              eq(salesData.userId, input.userId),
+              eq(salesData.userId, userId),
               gte(salesData.orderDate, previousStart),
               lte(salesData.orderDate, previousEnd)
             )
@@ -77,6 +88,7 @@ export const dashboardAnalyticsRouter = router({
           revenueGrowth: parseFloat(revenueGrowth.toFixed(2)),
         };
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         console.error("Error fetching KPI metrics:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -91,22 +103,23 @@ export const dashboardAnalyticsRouter = router({
   getRevenueTrend: protectedProcedure
     .input(
       z.object({
-        userId: z.number(),
+        userId: z.number().optional(),
         startDate: z.date(),
         endDate: z.date(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
+        const userId = getEffectiveUserId(ctx, input.userId);
 
         const sales = await db
           .select()
           .from(salesData)
           .where(
             and(
-              eq(salesData.userId, input.userId),
+              eq(salesData.userId, userId),
               gte(salesData.orderDate, input.startDate),
               lte(salesData.orderDate, input.endDate)
             )
@@ -122,6 +135,7 @@ export const dashboardAnalyticsRouter = router({
 
         return trendData;
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         console.error("Error fetching revenue trend:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -136,22 +150,23 @@ export const dashboardAnalyticsRouter = router({
   getRevenueByMarketplace: protectedProcedure
     .input(
       z.object({
-        userId: z.number(),
+        userId: z.number().optional(),
         startDate: z.date(),
         endDate: z.date(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
+        const userId = getEffectiveUserId(ctx, input.userId);
 
         const sales = await db
           .select()
           .from(salesData)
           .where(
             and(
-              eq(salesData.userId, input.userId),
+              eq(salesData.userId, userId),
               gte(salesData.orderDate, input.startDate),
               lte(salesData.orderDate, input.endDate)
             )
@@ -172,6 +187,7 @@ export const dashboardAnalyticsRouter = router({
 
         return data;
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         console.error("Error fetching revenue by marketplace:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -186,22 +202,23 @@ export const dashboardAnalyticsRouter = router({
   getAdSpendMetrics: protectedProcedure
     .input(
       z.object({
-        userId: z.number(),
+        userId: z.number().optional(),
         startDate: z.date(),
         endDate: z.date(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
+        const userId = getEffectiveUserId(ctx, input.userId);
 
         const adSpend = await db
           .select()
           .from(adSpendData)
           .where(
             and(
-              eq(adSpendData.userId, input.userId),
+              eq(adSpendData.userId, userId),
               gte(adSpendData.date, input.startDate),
               lte(adSpendData.date, input.endDate)
             )
@@ -213,11 +230,12 @@ export const dashboardAnalyticsRouter = router({
           spend: parseFloat(a.adSpend || 0),
           revenue: parseFloat(a.revenueFromAds || 0),
           roas: parseFloat(a.adSpend || 0) > 0 ? parseFloat(a.revenueFromAds || 0) / parseFloat(a.adSpend || 0) : 0,
-          platform: a.platform || "Unknown",
+          platform: a.marketplace || "Unknown",
         }));
 
         return metrics;
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         console.error("Error fetching ad spend metrics:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -232,23 +250,24 @@ export const dashboardAnalyticsRouter = router({
   getTopProducts: protectedProcedure
     .input(
       z.object({
-        userId: z.number(),
+        userId: z.number().optional(),
         startDate: z.date(),
         endDate: z.date(),
         limit: z.number().default(10),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
+        const userId = getEffectiveUserId(ctx, input.userId);
 
         const sales = await db
           .select()
           .from(salesData)
           .where(
             and(
-              eq(salesData.userId, input.userId),
+              eq(salesData.userId, userId),
               gte(salesData.orderDate, input.startDate),
               lte(salesData.orderDate, input.endDate)
             )
@@ -276,6 +295,7 @@ export const dashboardAnalyticsRouter = router({
 
         return products;
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         console.error("Error fetching top products:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -288,17 +308,18 @@ export const dashboardAnalyticsRouter = router({
    * Get sync status for real-time indicator
    */
   getSyncStatus: protectedProcedure
-    .input(z.object({ userId: z.number() }))
-    .query(async ({ input }) => {
+    .input(z.object({ userId: z.number().optional() }))
+    .query(async ({ ctx, input }) => {
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
+        const userId = getEffectiveUserId(ctx, input.userId);
 
         // Get last sync time from sales data
         const lastSale = await db
           .select()
           .from(salesData)
-          .where(eq(salesData.userId, input.userId))
+          .where(eq(salesData.userId, userId))
           .orderBy(desc(salesData.createdAt))
           .limit(1);
 
@@ -313,6 +334,7 @@ export const dashboardAnalyticsRouter = router({
           status: syncAgeMinutes === null ? "never" : syncAgeMinutes < 5 ? "fresh" : syncAgeMinutes < 60 ? "recent" : "stale",
         };
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         console.error("Error fetching sync status:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -327,22 +349,23 @@ export const dashboardAnalyticsRouter = router({
   getSummaryStats: protectedProcedure
     .input(
       z.object({
-        userId: z.number(),
+        userId: z.number().optional(),
         startDate: z.date(),
         endDate: z.date(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       try {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
+        const userId = getEffectiveUserId(ctx, input.userId);
 
         const sales = await db
           .select()
           .from(salesData)
           .where(
             and(
-              eq(salesData.userId, input.userId),
+              eq(salesData.userId, userId),
               gte(salesData.orderDate, input.startDate),
               lte(salesData.orderDate, input.endDate)
             )
@@ -353,7 +376,7 @@ export const dashboardAnalyticsRouter = router({
           .from(adSpendData)
           .where(
             and(
-              eq(adSpendData.userId, input.userId),
+              eq(adSpendData.userId, userId),
               gte(adSpendData.date, input.startDate),
               lte(adSpendData.date, input.endDate)
             )
@@ -376,6 +399,7 @@ export const dashboardAnalyticsRouter = router({
           roas: totalAdSpend > 0 ? parseFloat((totalRevenue / totalAdSpend).toFixed(2)) : 0,
         };
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         console.error("Error fetching summary stats:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -384,3 +408,4 @@ export const dashboardAnalyticsRouter = router({
       }
     }),
 });
+

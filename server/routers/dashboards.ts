@@ -22,10 +22,10 @@ export const dashboardsRouter = router({
         const dashboard = await dashboardDb.createCustomDashboard(
           ctx.user.id,
           input.name,
-          input.layout,
-          input.widgets,
-          input.teamId,
-          input.description
+          input.description,
+          input.layout || { columns: 12, rows: 12, gap: 16, padding: 16 },
+          input.widgets || [],
+          input.teamId
         );
         return { success: true, dashboard };
       } catch (error) {
@@ -58,49 +58,48 @@ export const dashboardsRouter = router({
     .input(z.object({ dashboardId: z.number() }))
     .query(async ({ ctx, input }) => {
       try {
-        const accessLevel = await dashboardDb.getDashboardAccessLevel(input.dashboardId, ctx.user.id);
-        // "none" covers both "doesn't exist" and "exists but you can't see it" ---
-        // reporting them the same way avoids leaking which dashboard IDs are in use.
-        if (accessLevel === "none") {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Dashboard not found",
-          });
-        }
-
         const dashboard = await dashboardDb.getDashboardById(input.dashboardId);
         if (!dashboard) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Dashboard not found" });
+        }
+
+        // Check access level
+        const accessLevel = await dashboardDb.getDashboardAccessLevel(input.dashboardId, ctx.user.id);
+        if (accessLevel === "none") {
           throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Dashboard not found",
+            code: "FORBIDDEN",
+            message: "You do not have access to this dashboard",
           });
         }
 
-        // Increment view count
-        await dashboardDb.incrementDashboardViews(input.dashboardId);
+        // Increment view count asynchronously
+        dashboardDb.incrementDashboardViews(input.dashboardId).catch(console.error);
 
-        return dashboard;
+        return {
+          ...dashboard,
+          accessLevel,
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch dashboard",
+          message: error instanceof Error ? error.message : "Failed to fetch dashboard",
         });
       }
     }),
 
   /**
-   * Update dashboard
+   * Update custom dashboard
    */
   updateDashboard: protectedProcedure
     .input(
       z.object({
         dashboardId: z.number(),
-        name: z.string().optional(),
+        name: z.string().min(1).max(255).optional(),
         description: z.string().optional(),
         layout: z.any().optional(),
         widgets: z.array(z.any()).optional(),
-        isPublic: z.number().optional(),
+        isPublic: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -116,7 +115,7 @@ export const dashboardsRouter = router({
           });
         }
 
-        const dashboard = await dashboardDb.updateDashboard(input.dashboardId, {
+        const dashboard = await dashboardDb.updateCustomDashboard(input.dashboardId, ctx.user.id, {
           name: input.name,
           description: input.description,
           layout: input.layout,
@@ -144,17 +143,14 @@ export const dashboardsRouter = router({
         if (accessLevel === "none") {
           throw new TRPCError({ code: "NOT_FOUND", message: "Dashboard not found" });
         }
-        // Deletion is intentionally owner-only, even for users with "edit" access
-        // through a team or a share --- sharing edit rights shouldn't imply the
-        // ability to destroy the dashboard for everyone else.
-        if (accessLevel !== "owner") {
+        if (accessLevel !== "admin") {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Only the dashboard owner can delete it",
+            message: "Only the dashboard owner or admin can delete it",
           });
         }
 
-        await dashboardDb.deleteDashboard(input.dashboardId);
+        await dashboardDb.deleteCustomDashboard(input.dashboardId, ctx.user.id);
         return { success: true };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -181,10 +177,10 @@ export const dashboardsRouter = router({
       try {
         const sharing = await dashboardDb.shareDashboard(
           input.dashboardId,
-          ctx.user.id,
           input.sharedWithUserId,
           input.sharedWithTeamId,
-          input.permission
+          input.permission,
+          ctx.user.id
         );
         return { success: true, sharing };
       } catch (error) {
@@ -244,7 +240,7 @@ export const dashboardsRouter = router({
     .mutation(async ({ ctx, input }) => {
       try {
         const prefs = await dashboardDb.updateUserPreferences(ctx.user.id, input);
-        return { success: true, preferences: prefs[0] };
+        return { success: true, preferences: prefs };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",

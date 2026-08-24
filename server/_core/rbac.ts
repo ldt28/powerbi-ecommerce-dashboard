@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import type { Context } from "./context";
+import type { TrpcContext } from "./context";
 
 /**
  * Role-Based Access Control (RBAC) Utilities
@@ -104,7 +104,7 @@ export function hasAllPermissions(userRole: UserRole, permissions: string[]): bo
 /**
  * Enforce a specific permission
  */
-export function enforcePermission(ctx: any, permission: string): void {
+export function enforcePermission(ctx: TrpcContext, permission: string): void {
   if (!ctx.user) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
@@ -112,7 +112,7 @@ export function enforcePermission(ctx: any, permission: string): void {
     });
   }
 
-  if (!hasPermission(ctx.user.role as UserRole, permission)) {
+  if (!hasPermission((ctx.user.role as UserRole) || "viewer", permission)) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: `User does not have permission: ${permission}`,
@@ -123,7 +123,7 @@ export function enforcePermission(ctx: any, permission: string): void {
 /**
  * Enforce any of the given permissions
  */
-export function enforceAnyPermission(ctx: Context, permissions: string[]): void {
+export function enforceAnyPermission(ctx: TrpcContext, permissions: string[]): void {
   if (!ctx.user) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
@@ -131,7 +131,7 @@ export function enforceAnyPermission(ctx: Context, permissions: string[]): void 
     });
   }
 
-  if (!hasAnyPermission(ctx.user.role as UserRole, permissions)) {
+  if (!hasAnyPermission((ctx.user.role as UserRole) || "viewer", permissions)) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: `User does not have any of the required permissions`,
@@ -142,7 +142,7 @@ export function enforceAnyPermission(ctx: Context, permissions: string[]): void 
 /**
  * Enforce all of the given permissions
  */
-export function enforceAllPermissions(ctx: Context, permissions: string[]): void {
+export function enforceAllPermissions(ctx: TrpcContext, permissions: string[]): void {
   if (!ctx.user) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
@@ -150,7 +150,7 @@ export function enforceAllPermissions(ctx: Context, permissions: string[]): void
     });
   }
 
-  if (!hasAllPermissions(ctx.user.role as UserRole, permissions)) {
+  if (!hasAllPermissions((ctx.user.role as UserRole) || "viewer", permissions)) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: `User does not have all required permissions`,
@@ -161,7 +161,7 @@ export function enforceAllPermissions(ctx: Context, permissions: string[]): void
 /**
  * Enforce admin role
  */
-export function enforceAdmin(ctx: Context): void {
+export function enforceAdmin(ctx: TrpcContext): void {
   if (!ctx.user) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
@@ -180,7 +180,7 @@ export function enforceAdmin(ctx: Context): void {
 /**
  * Enforce editor or admin role
  */
-export function enforceEditor(ctx: Context): void {
+export function enforceEditor(ctx: TrpcContext): void {
   if (!ctx.user) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
@@ -188,10 +188,10 @@ export function enforceEditor(ctx: Context): void {
     });
   }
 
-  if (ctx.user.role !== "admin" && ctx.user.role !== "editor") {
+  if (ctx.user.role !== "admin" && (ctx.user.role as string) !== "editor") {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Editor or Admin access required",
+      message: "Editor access required",
     });
   }
 }

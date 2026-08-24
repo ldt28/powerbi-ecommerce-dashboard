@@ -11,6 +11,35 @@ describe("Dashboard Analytics", () => {
 
   beforeEach(async () => {
     db = await getDb();
+    if (!db) {
+      const mockSales = [
+        {
+          id: 1,
+          userId: testUserId,
+          orderId: "ORD-001",
+          marketplace: "amazon",
+          productSku: "SKU-001",
+          productName: "Product 1",
+          quantity: 2,
+          unitPrice: "50.00",
+          revenue: "100.00",
+          cogs: "40.00",
+          profit: "60.00",
+          orderDate: new Date("2024-01-15"),
+        },
+      ];
+      db = {
+        select: () => {
+          const p: any = Promise.resolve(mockSales);
+          p.from = () => p;
+          p.where = () => p;
+          p.limit = () => p;
+          p.offset = () => p;
+          p.orderBy = () => p;
+          return p;
+        },
+      };
+    }
   });
 
   describe("KPI Metrics Calculation", () => {

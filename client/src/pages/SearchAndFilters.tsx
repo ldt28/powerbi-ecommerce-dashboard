@@ -20,6 +20,12 @@ interface FilterHistory {
   resultCount: number;
 }
 
+interface Preset {
+  id: string;
+  name: string;
+  conditions: FilterCondition[];
+}
+
 /**
  * Search and Filters Page
  * Comprehensive search and filtering interface
@@ -41,7 +47,7 @@ export default function SearchAndFilters() {
       resultCount: 1203,
     },
   ]);
-  const [savedPresets, setSavedPresets] = useState([
+  const [savedPresets, setSavedPresets] = useState<Preset[]>([
     {
       id: "preset_1",
       name: "High Revenue Items",
@@ -131,7 +137,7 @@ export default function SearchAndFilters() {
           <CardContent>
             <SearchWithAutocomplete
               onSearch={handleSearch}
-              onFilterSelect={handleApplyFilters}
+              onFilterSelect={(conditions) => handleApplyFilters(conditions as FilterCondition[])}
               history={filterHistory}
             />
             {searchQuery && (

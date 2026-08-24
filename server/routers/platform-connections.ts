@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { apiConnections } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
+import { TokenEncryption } from "../utils/encryption";
 
 /**
  * Platform Connections Router
@@ -139,14 +140,19 @@ export const platformConnectionsRouter = router({
           )
           .limit(1);
 
+        const encryptedAccessToken = TokenEncryption.encrypt(input.accessToken);
+        const encryptedRefreshToken = input.refreshToken
+          ? TokenEncryption.encrypt(input.refreshToken)
+          : undefined;
+
         if (existing.length > 0) {
           // Update existing connection
           await db
             .update(apiConnections)
             .set({
               connectionName: input.connectionName,
-              accessToken: input.accessToken,
-              refreshToken: input.refreshToken || existing[0].refreshToken,
+              accessToken: encryptedAccessToken,
+              refreshToken: encryptedRefreshToken || existing[0].refreshToken,
               expiresAt: input.expiresAt,
               accountEmail: input.accountEmail,
               accountName: input.accountName,
@@ -171,8 +177,8 @@ export const platformConnectionsRouter = router({
             platform: input.platform,
             connectionName: input.connectionName,
             connectionType: input.connectionType,
-            accessToken: input.accessToken,
-            refreshToken: input.refreshToken,
+            accessToken: encryptedAccessToken,
+            refreshToken: encryptedRefreshToken,
             expiresAt: input.expiresAt,
             accountId: input.accountId,
             accountEmail: input.accountEmail,

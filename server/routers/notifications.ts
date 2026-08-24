@@ -25,15 +25,15 @@ export const notificationsRouter = router({
 
       let emailTemplate;
       if (input.templateType === "teamInvite") {
-        emailTemplate = template("https://example.com/invite/123", "Admin");
+        emailTemplate = emailTemplates.teamInvite("https://example.com/invite/123", "Admin");
       } else if (input.templateType === "anomalyAlert") {
-        emailTemplate = template("Amazon", "Revenue", 15000);
+        emailTemplate = emailTemplates.anomalyAlert("Amazon", "Revenue", 15000);
       } else if (input.templateType === "dailyReport") {
-        emailTemplate = template("2024-05-07", { Revenue: "$2,400", Orders: "150" });
+        emailTemplate = emailTemplates.dailyReport("2024-05-07", { Revenue: 2400, Orders: 150 });
       } else if (input.templateType === "exportReady") {
-        emailTemplate = template("CSV", "https://example.com/download/123");
+        emailTemplate = emailTemplates.exportReady("CSV", "https://example.com/download/123");
       } else {
-        emailTemplate = template("Admin");
+        emailTemplate = emailTemplates.roleChanged("Admin");
       }
 
       const success = await sendEmail(input.email, emailTemplate);
@@ -144,7 +144,7 @@ export const notificationsRouter = router({
       z.object({
         channel: z.enum(["email", "slack", "discord", "sms", "push"]),
         enabled: z.boolean(),
-        config: z.record(z.any()).optional(),
+        config: z.record(z.string(), z.any()).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

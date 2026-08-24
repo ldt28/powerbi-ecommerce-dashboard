@@ -18,7 +18,7 @@ export function usePermission(permission: string) {
  */
 export function useCanManageUsers() {
   const { data: canManage } = trpc.rbacManagement.canManageUsers.useQuery(
-    {},
+    undefined,
     { staleTime: 5 * 60 * 1000 }
   );
 
@@ -30,7 +30,7 @@ export function useCanManageUsers() {
  */
 export function useMyPermissions() {
   const { data: permissions } = trpc.rbacManagement.getMyPermissions.useQuery(
-    {},
+    undefined,
     { staleTime: 5 * 60 * 1000 }
   );
 
@@ -50,7 +50,7 @@ export function useIsAdmin() {
  */
 export function useIsEditor() {
   const { user } = useAuth();
-  return user?.role === "admin" || user?.role === "editor";
+  return user?.role === "admin" || (user?.role as string) === "editor";
 }
 
 /**
@@ -58,5 +58,7 @@ export function useIsEditor() {
  */
 export function useHasRole(role: "admin" | "editor" | "viewer") {
   const { user } = useAuth();
-  return user?.role === role;
+  if (role === "admin") return user?.role === "admin";
+  return (user?.role as string) === role;
 }
+

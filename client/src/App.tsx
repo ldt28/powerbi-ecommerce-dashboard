@@ -30,6 +30,9 @@ import Team from "./pages/Team";
 import NotificationSettings from "./pages/NotificationSettings";
 import TeamSettings from "./pages/TeamSettings";
 import BigCommerceSetup from "./pages/BigCommerceSetup";
+import SharedDashboards from "./pages/SharedDashboards";
+import CustomDashboards from "./pages/CustomDashboards";
+import ComponentShowcase from "./pages/ComponentShowcase";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -49,7 +52,11 @@ function Router() {
       <Route path="/admin/owner" component={AdminDashboard} />
       <Route path="/analytics" component={AnalyticsDashboard} />
       <Route path="/settings/connections" component={PlatformConnections} />
+      <Route path="/platform-connections" component={PlatformConnections} />
       <Route path="/dashboard/customize" component={CustomizableDashboard} />
+      <Route path="/custom-dashboards" component={CustomDashboards} />
+      <Route path="/shared-dashboards" component={SharedDashboards} />
+      <Route path="/components" component={ComponentShowcase} />
       <Route path="/settings" component={Settings} />
       <Route path="/help" component={Help} />
       <Route path="/marketplace-comparison" component={MarketplaceComparison} />

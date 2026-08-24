@@ -52,12 +52,12 @@ export const exportSchedulingRouter = router({
         time: input.time,
         emailRecipients: JSON.stringify(input.emailRecipients),
         includeMetrics: JSON.stringify(input.includeMetrics),
-        isActive: input.isActive,
+        isActive: input.isActive ? 1 : 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
-      return { success: true, id: result[0]?.insertId };
+      return { success: true, id: (result as any)[0]?.insertId };
     }),
 
   /**
@@ -92,7 +92,7 @@ export const exportSchedulingRouter = router({
           time: input.time,
           emailRecipients: JSON.stringify(input.emailRecipients),
           includeMetrics: JSON.stringify(input.includeMetrics),
-          isActive: input.isActive,
+          isActive: input.isActive ? 1 : 0,
           updatedAt: new Date(),
         })
         .where(
@@ -136,7 +136,7 @@ export const exportSchedulingRouter = router({
       await db
         .update(exportSchedules)
         .set({
-          isActive: input.isActive,
+          isActive: input.isActive ? 1 : 0,
           updatedAt: new Date(),
         })
         .where(

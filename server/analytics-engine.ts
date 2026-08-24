@@ -1,6 +1,6 @@
 import { getDb } from "./db";
 import { anomalyAlerts, predictions as predictionsTable, cohorts, customerJourneyEvents, attributionModels, funnelAnalysis } from "../drizzle/schema";
-import { eq, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc } from "drizzle-orm";
 
 /**
  * Advanced Analytics Engine
@@ -170,6 +170,7 @@ export async function generatePredictions(
 
   const { slope, intercept, r2 } = linearRegression(historicalData);
   const predictions: Array<{ date: Date; value: number }> = [];
+  const rowsToInsert: any[] = [];
 
   const today = new Date();
   for (let i = 1; i <= forecastDays; i++) {
@@ -177,24 +178,27 @@ export async function generatePredictions(
     const forecastDate = new Date(today);
     forecastDate.setDate(forecastDate.getDate() + i);
 
+    const nonNegativeValue = Math.max(0, predictedValue);
     predictions.push({
       date: forecastDate,
-      value: Math.max(0, predictedValue), // Ensure non-negative values
+      value: nonNegativeValue,
     });
 
-    // Save to database
-    const predictionData: any = {
+    rowsToInsert.push({
       userId,
       metricName,
       predictionDate: forecastDate,
-      predictedValue: predictedValue.toString(),
+      predictedValue: nonNegativeValue.toString(),
       confidenceInterval: (95).toString(),
-      lowerBound: (predictedValue * 0.85).toString(),
-      upperBound: (predictedValue * 1.15).toString(),
+      lowerBound: (nonNegativeValue * 0.85).toString(),
+      upperBound: (nonNegativeValue * 1.15).toString(),
       modelType: "linear",
       accuracy: (r2 * 100).toString(),
-    };
-    await db.insert(predictionsTable).values(predictionData);
+    });
+  }
+
+  if (rowsToInsert.length > 0) {
+    await db.insert(predictionsTable).values(rowsToInsert);
   }
 
   return predictions;
@@ -219,7 +223,11 @@ export async function calculateCohortRetention(
     .select()
     .from(customerJourneyEvents)
     .where(
-      eq(customerJourneyEvents.userId, userId)
+      and(
+        eq(customerJourneyEvents.userId, userId),
+        gte(customerJourneyEvents.timestamp, startDate),
+        lte(customerJourneyEvents.timestamp, endDate)
+      )
     )
     .limit(10000) as any;
 
@@ -321,9 +329,6 @@ export async function calculateFunnelMetrics(
   funnelSteps: string[],
   events: Array<{ customerId: string; eventType: string; timestamp: Date }>
 ) {
-  const db = await getDb();
-  if (!db) throw new Error("Database unavailable");
-
   const stepCounts: Record<string, Set<string>> = {};
   funnelSteps.forEach(step => {
     stepCounts[step] = new Set();

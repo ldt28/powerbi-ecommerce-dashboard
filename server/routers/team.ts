@@ -57,17 +57,28 @@ export const teamRouter = router({
         description: input.description,
       });
 
+      const newTeamId = (team as any)[0]?.insertId ? Number((team as any)[0].insertId) : 1;
+
+      // Add owner to team_members
+      await db.insert(teamMembers).values({
+        teamId: newTeamId,
+        userId: ctx.user.id,
+        role: "admin",
+        status: "accepted",
+        acceptedAt: new Date(),
+      });
+
       const createTeamActivity: any = {
-        teamId: team[0],
+        teamId: newTeamId,
         userId: ctx.user.id,
         action: "CREATE_TEAM",
         resourceType: "team",
-        resourceId: team[0],
+        resourceId: newTeamId,
         details: JSON.stringify({ teamName: input.name }),
       };
       await db.insert(activityLog).values(createTeamActivity);
 
-      return { id: team[0], name: input.name };
+      return { id: newTeamId, name: input.name };
     }),
 
   /**
@@ -83,15 +94,32 @@ export const teamRouter = router({
       .where(eq(teams.ownerId, ctx.user.id));
 
     const memberTeams = await db
-      .select({ teams: teams })
+      .select({
+        id: teams.id,
+        ownerId: teams.ownerId,
+        name: teams.name,
+        description: teams.description,
+        createdAt: teams.createdAt,
+        updatedAt: teams.updatedAt,
+        role: teamMembers.role,
+      })
       .from(teamMembers)
       .innerJoin(teams, eq(teamMembers.teamId, teams.id))
-      .where(eq(teamMembers.userId, ctx.user.id));
+      .where(
+        and(
+          eq(teamMembers.userId, ctx.user.id),
+          eq(teamMembers.status, "accepted")
+        )
+      );
 
-    return [
-      ...userTeams.map((t: typeof teams.$inferSelect) => ({ ...t, role: "owner" as const })),
-      ...memberTeams.map((m: any) => ({ ...m.teams, role: m.teamMembers.role })),
-    ];
+    const ownerTeamMap = new Map(userTeams.map((t) => [t.id, { ...t, role: "owner" as const }]));
+    for (const m of memberTeams) {
+      if (!ownerTeamMap.has(m.id)) {
+        ownerTeamMap.set(m.id, { ...m, role: (m.role || "viewer") as any });
+      }
+    }
+
+    return Array.from(ownerTeamMap.values());
   }),
 
   /**
@@ -454,10 +482,10 @@ export const teamRouter = router({
       // themselves (or anyone) access to any dashboardId. Only the dashboard's
       // owner can hand out access to it.
       const accessLevel = await getDashboardAccessLevel(input.dashboardId, ctx.user.id);
-      if (accessLevel !== "owner") {
+      if (accessLevel !== "admin") {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Only the dashboard owner can grant access to it",
+          message: "Only the dashboard owner or admin can grant access to it",
         });
       }
 

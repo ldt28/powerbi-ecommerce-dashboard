@@ -34,7 +34,7 @@ export interface GoogleAnalyticsData {
 }
 
 class GoogleAnalyticsClient {
-  private oauth2Client: OAuth2Client;
+  private oauth2Client: any;
   private analytics: any;
   private config: GoogleAnalyticsConfig;
 
@@ -45,7 +45,7 @@ class GoogleAnalyticsClient {
       config.clientSecret,
       config.redirectUri
     );
-    this.analytics = google.analytics({
+    this.analytics = (google as any).analytics({
       version: "v3",
       auth: this.oauth2Client,
     });

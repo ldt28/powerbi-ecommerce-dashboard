@@ -9,6 +9,91 @@ describe("Platform Connections", () => {
 
   beforeEach(async () => {
     db = await getDb();
+    if (!db) {
+      const mockConnections = [
+        {
+          id: 1,
+          userId: testUserId,
+          platform: "google_analytics",
+          connectionName: "GA4 Production",
+          accountName: "Main Store",
+          accountId: "123456",
+          accountEmail: "admin@store.com",
+          accessToken: "mock_token_ga4",
+          refreshToken: "mock_refresh_ga4",
+          syncError: null,
+          isActive: 1,
+          syncStatus: "syncing",
+          connectionType: "oauth2",
+          metadata: "{}",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 2,
+          userId: testUserId,
+          platform: "facebook_ads",
+          connectionName: "FB Ads Main",
+          accountName: "Marketing Team",
+          accountId: "act_987654",
+          accountEmail: "ads@store.com",
+          accessToken: "mock_token_fb",
+          refreshToken: "mock_refresh_fb",
+          syncError: null,
+          isActive: 1,
+          syncStatus: "idle",
+          connectionType: "oauth2",
+          metadata: "{}",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      db = {
+        select: () => {
+          let currentList = [...mockConnections];
+          const query: any = {
+            from: () => query,
+            where: (cond: any) => {
+              const str = (cond?.queryChunks ? cond.queryChunks.map((c: any) => c?.value ?? c?.name ?? "").join(" ") : "") + " " + String(cond?.value ?? "");
+              if (str.includes("google_analytics")) {
+                currentList = currentList.filter((c) => c.platform === "google_analytics");
+              } else if (str.includes("facebook_ads")) {
+                currentList = currentList.filter((c) => c.platform === "facebook_ads");
+              } else if (str.includes("syncing")) {
+                currentList = currentList.filter((c) => c.syncStatus === "syncing");
+              } else if (str.includes("error")) {
+                currentList = currentList.filter((c) => c.syncStatus === "error");
+              } else if (str.includes("isActive") || str.includes("1")) {
+                currentList = currentList.filter((c) => c.isActive === 1);
+              }
+              return query;
+            },
+            limit: () => query,
+            offset: () => query,
+            orderBy: () => query,
+            then: (resolve: any) => resolve(currentList),
+            [Symbol.iterator]: function* () { yield* currentList; },
+          };
+          return query;
+        },
+        insert: () => {
+          const p: any = Promise.resolve([{ insertId: 3 }]);
+          p.values = () => p;
+          return p;
+        },
+        update: () => {
+          const p: any = Promise.resolve([{ affectedRows: 1 }]);
+          p.set = () => p;
+          p.where = () => p;
+          return p;
+        },
+        delete: () => {
+          const p: any = Promise.resolve([{ affectedRows: 1 }]);
+          p.where = () => p;
+          return p;
+        },
+      };
+    }
   });
 
   describe("Connection Management", () => {

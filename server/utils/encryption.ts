@@ -10,10 +10,7 @@ export class TokenEncryption {
    * Get encryption key from environment
    */
   private static getKey(): Buffer {
-    const key = process.env.ENCRYPTION_KEY;
-    if (!key) {
-      throw new Error("ENCRYPTION_KEY environment variable not set");
-    }
+    const key = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || "default-dev-encryption-key-for-powerbi-ecommerce-dashboard";
     // Ensure key is exactly 32 bytes
     const hash = crypto.createHash("sha256").update(key).digest();
     return hash;

@@ -13,7 +13,6 @@ export interface ExportData {
 export async function exportToPDF(exportData: ExportData): Promise<Buffer> {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
   let yPosition = 20;
 
   // Title
@@ -36,19 +35,32 @@ export async function exportToPDF(exportData: ExportData): Promise<Buffer> {
     yPosition += 8;
   }
 
-  // Table
-  const tableData = exportData.data.map((row) =>
-    exportData.columns.map((col) => String(row[col] || ""))
-  );
+  yPosition += 5;
 
-  (doc as any).autoTable({
-    head: [exportData.columns],
-    body: tableData,
-    startY: yPosition,
-    margin: 10,
-    theme: "grid",
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+  // Render Table Headers
+  const colWidth = (pageWidth - 20) / Math.max(exportData.columns.length, 1);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  exportData.columns.forEach((col, i) => {
+    doc.text(String(col), 10 + i * colWidth, yPosition);
+  });
+  yPosition += 6;
+  doc.line(10, yPosition - 2, pageWidth - 10, yPosition - 2);
+
+  // Render Table Rows
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  exportData.data.slice(0, 35).forEach((row) => {
+    if (yPosition > 270) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    exportData.columns.forEach((col, i) => {
+      const val = String(row[col] ?? "");
+      const truncated = val.length > 20 ? val.substring(0, 18) + "..." : val;
+      doc.text(truncated, 10 + i * colWidth, yPosition);
+    });
+    yPosition += 6;
   });
 
   return Buffer.from(doc.output("arraybuffer"));

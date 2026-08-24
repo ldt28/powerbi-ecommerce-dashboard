@@ -28,7 +28,7 @@ class PlatformSchedulerIntegration {
   private activesyncs: Map<number, Promise<SyncResult>> = new Map();
   private config: ScheduledSyncConfig;
 
-  constructor(config: ScheduledSyncConfig) {
+  constructor(config?: Partial<ScheduledSyncConfig>) {
     this.config = {
       enabled: true,
       intervalMs: 3600000, // 1 hour
@@ -276,9 +276,9 @@ class PlatformSchedulerIntegration {
  * Create scheduler integration instance
  */
 export function createSchedulerIntegration(
-  config?: ScheduledSyncConfig
+  config?: Partial<ScheduledSyncConfig>
 ): PlatformSchedulerIntegration {
-  return new PlatformSchedulerIntegration(config || {});
+  return new PlatformSchedulerIntegration(config);
 }
 
 export default PlatformSchedulerIntegration;

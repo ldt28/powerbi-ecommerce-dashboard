@@ -1,8 +1,8 @@
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
-import { salesData, adSpendData } from "../../drizzle/schema";
-import { sql, and, gte, lte } from "drizzle-orm";
+import { salesData } from "../../drizzle/schema";
+import { and, eq, gte, lte } from "drizzle-orm";
 
 export const webstoreMetricsRouter = router({
   // Get all 14 metrics for a store
@@ -14,11 +14,11 @@ export const webstoreMetricsRouter = router({
         endDate: z.date().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const startDate = input.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const endDate = input.endDate || new Date();
 
-      // Query sales data for the store
+      // Query sales data for the store scoped to the current user
       const db = await getDb();
       if (!db) throw new Error("Database connection failed");
       const data = await db
@@ -26,7 +26,8 @@ export const webstoreMetricsRouter = router({
         .from(salesData)
         .where(
           and(
-            sql`${salesData.marketplace} = ${input.storeName}`,
+            eq(salesData.userId, ctx.user.id),
+            eq(salesData.marketplace, input.storeName),
             gte(salesData.orderDate, startDate),
             lte(salesData.orderDate, endDate)
           )
@@ -77,7 +78,7 @@ export const webstoreMetricsRouter = router({
         period: z.enum(["daily", "weekly", "monthly"]).optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const period = input.period || "daily";
       const days = period === "daily" ? 30 : period === "weekly" ? 90 : 365;
       const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -89,7 +90,8 @@ export const webstoreMetricsRouter = router({
         .from(salesData)
         .where(
           and(
-            sql`${salesData.marketplace} = ${input.storeName}`,
+            eq(salesData.userId, ctx.user.id),
+            eq(salesData.marketplace, input.storeName),
             gte(salesData.orderDate, startDate)
           )
         );
@@ -111,7 +113,7 @@ export const webstoreMetricsRouter = router({
         previousPeriodEnd: z.date(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database connection failed");
       const currentData = await db
@@ -119,19 +121,20 @@ export const webstoreMetricsRouter = router({
         .from(salesData)
         .where(
           and(
-            sql`${salesData.marketplace} = ${input.storeName}`,
+            eq(salesData.userId, ctx.user.id),
+            eq(salesData.marketplace, input.storeName),
             gte(salesData.orderDate, input.currentPeriodStart),
             lte(salesData.orderDate, input.currentPeriodEnd)
           )
         );
 
-      if (!db) throw new Error("Database connection failed");
       const previousData = await db
         .select()
         .from(salesData)
         .where(
           and(
-            sql`${salesData.marketplace} = ${input.storeName}`,
+            eq(salesData.userId, ctx.user.id),
+            eq(salesData.marketplace, input.storeName),
             gte(salesData.orderDate, input.previousPeriodStart),
             lte(salesData.orderDate, input.previousPeriodEnd)
           )
@@ -153,11 +156,11 @@ export const webstoreMetricsRouter = router({
 
 // Helper functions to calculate each metric
 function calculateGrossRevenue(data: any[]): number {
-  return data.reduce((sum, item) => sum + (item.revenue || 0), 0);
+  return data.reduce((sum, item) => sum + parseFloat(item.revenue || 0), 0);
 }
 
 function calculateGrossADV(data: any[]): number {
-  return data.reduce((sum, item) => sum + (item.adSpend || 0), 0);
+  return data.reduce((sum, item) => sum + parseFloat(item.adSpend || 0), 0);
 }
 
 function calculateAOV(data: any[]): number {
@@ -167,11 +170,11 @@ function calculateAOV(data: any[]): number {
 }
 
 function calculateTotalSales(data: any[]): number {
-  return data.reduce((sum, item) => sum + (item.orders || 0), 0);
+  return data.length;
 }
 
 function calculateDiscounts(data: any[]): number {
-  return data.reduce((sum, item) => sum + (item.discounts || 0), 0);
+  return data.reduce((sum, item) => sum + parseFloat(item.discounts || 0), 0);
 }
 
 function calculateGrossSales(data: any[]): number {
@@ -183,7 +186,7 @@ function calculateNewCustomerOrders(data: any[]): number {
 }
 
 function calculateNewCustomerRevenue(data: any[]): number {
-  return data.reduce((sum, item) => sum + (item.newCustomerRevenue || 0), 0);
+  return data.reduce((sum, item) => sum + parseFloat(item.newCustomerRevenue || 0), 0);
 }
 
 function calculateNewCustomers(data: any[]): number {
@@ -195,19 +198,19 @@ function calculateReturns(data: any[]): number {
 }
 
 function calculateSalesTaxes(data: any[]): number {
-  return data.reduce((sum, item) => sum + (item.salesTaxes || 0), 0);
+  return data.reduce((sum, item) => sum + parseFloat(item.salesTaxes || 0), 0);
 }
 
 function calculateUnitsSold(data: any[]): number {
-  return data.reduce((sum, item) => sum + (item.unitsSold || 0), 0);
+  return data.reduce((sum, item) => sum + (item.quantity || 1), 0);
 }
 
 function calculateReturningCustomerRevenue(data: any[]): number {
-  return data.reduce((sum, item) => sum + (item.returningCustomerRevenue || 0), 0);
+  return data.reduce((sum, item) => sum + parseFloat(item.returningCustomerRevenue || 0), 0);
 }
 
 function calculateOrdersOver0(data: any[]): number {
-  return data.reduce((sum, item) => sum + (item.ordersOver0 || 0), 0);
+  return data.filter((item) => parseFloat(item.revenue || 0) > 0).length;
 }
 
 function calculateMetricValue(data: any[], metric: string): number {
@@ -249,7 +252,7 @@ function groupByPeriod(data: any[], period: string, metric: string): any[] {
   const grouped: Record<string, any[]> = {};
 
   data.forEach((item) => {
-    const date = new Date(item.timestamp);
+    const date = new Date(item.orderDate || item.createdAt || Date.now());
     let key: string;
 
     if (period === "daily") {

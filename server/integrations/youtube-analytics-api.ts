@@ -1,5 +1,4 @@
 import { google } from "googleapis";
-import { OAuth2Client } from "google-auth-library";
 
 /**
  * YouTube Analytics API Integration Service
@@ -45,7 +44,7 @@ export interface DemographicsMetrics {
 export class YouTubeAnalyticsService {
   private analyticsClient: any;
   private youtubeClient: any;
-  private oauth2Client: OAuth2Client;
+  private oauth2Client: any;
 
   constructor(accessToken: string, refreshToken?: string) {
     this.oauth2Client = new google.auth.OAuth2(
