@@ -270,8 +270,22 @@ class SDKServer {
     const signedInAt = new Date();
     let user = await db.getUserByOpenId(sessionUserId);
 
-    // If user not in DB, sync from OAuth server automatically
+    // If user not in DB, try to sync from OAuth server
     if (!user) {
+      // Dev-mode shortcut: no DB + no OAuth → return a synthetic user
+      if (process.env.NODE_ENV !== "production") {
+        return {
+          id: 1,
+          openId: sessionUserId,
+          name: session.name || "Demo User",
+          email: "demo@example.com",
+          role: "admin",
+          loginMethod: "demo",
+          createdAt: signedInAt,
+          lastSignedIn: signedInAt,
+        } as User;
+      }
+
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
         await db.upsertUser({
@@ -299,6 +313,7 @@ class SDKServer {
 
     return user;
   }
+
 }
 
 export const sdk = new SDKServer();
