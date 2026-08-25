@@ -18,10 +18,8 @@ import { getDashboardAccessLevel } from "../db/dashboards";
  * let any authenticated user read (or in one case, act on) any other team's
  * data just by guessing/incrementing the teamId.
  */
-async function getMembership(db: Awaited<ReturnType<typeof getDb>>, teamId: number, userId: number) {
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-
-  const rows = await db
+function getMembership(db: ReturnType<typeof getDb>, teamId: number, userId: number) {
+  const rows = db
     .select()
     .from(teamMembers)
     .where(
@@ -31,7 +29,8 @@ async function getMembership(db: Awaited<ReturnType<typeof getDb>>, teamId: numb
         eq(teamMembers.status, "accepted")
       )
     )
-    .limit(1);
+    .limit(1)
+    .all();
 
   return rows[0] || null;
 }
@@ -48,25 +47,27 @@ export const teamRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const db = getDb();
 
-      const team = await db.insert(teams).values({
+      const team = db.insert(teams).values({
         ownerId: ctx.user.id,
         name: input.name,
         description: input.description,
-      });
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }).run();
 
-      const newTeamId = (team as any)[0]?.insertId ? Number((team as any)[0].insertId) : 1;
+      const newTeamId = Number(team.lastInsertRowid);
 
       // Add owner to team_members
-      await db.insert(teamMembers).values({
+      db.insert(teamMembers).values({
         teamId: newTeamId,
         userId: ctx.user.id,
         role: "admin",
         status: "accepted",
-        acceptedAt: new Date(),
-      });
+        acceptedAt: new Date().toISOString(),
+        joinedAt: new Date().toISOString(),
+      }).run();
 
       const createTeamActivity: any = {
         teamId: newTeamId,
@@ -75,8 +76,9 @@ export const teamRouter = router({
         resourceType: "team",
         resourceId: newTeamId,
         details: JSON.stringify({ teamName: input.name }),
+        timestamp: new Date().toISOString(),
       };
-      await db.insert(activityLog).values(createTeamActivity);
+      db.insert(activityLog).values(createTeamActivity).run();
 
       return { id: newTeamId, name: input.name };
     }),
@@ -85,15 +87,15 @@ export const teamRouter = router({
    * Get user's teams
    */
   getMyTeams: protectedProcedure.query(async ({ ctx }) => {
-    const db = await getDb();
-    if (!db) return [];
+    const db = getDb();
 
-    const userTeams = await db
+    const userTeams = db
       .select()
       .from(teams)
-      .where(eq(teams.ownerId, ctx.user.id));
+      .where(eq(teams.ownerId, ctx.user.id))
+      .all();
 
-    const memberTeams = await db
+    const memberTeams = db
       .select({
         id: teams.id,
         ownerId: teams.ownerId,
@@ -110,7 +112,8 @@ export const teamRouter = router({
           eq(teamMembers.userId, ctx.user.id),
           eq(teamMembers.status, "accepted")
         )
-      );
+      )
+      .all();
 
     const ownerTeamMap = new Map(userTeams.map((t) => [t.id, { ...t, role: "owner" as const }]));
     for (const m of memberTeams) {
@@ -128,22 +131,15 @@ export const teamRouter = router({
   getTeam: protectedProcedure
     .input(z.object({ teamId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const db = getDb();
 
-      const team = await db.select().from(teams).where(eq(teams.id, input.teamId));
+      const team = db.select().from(teams).where(eq(teams.id, input.teamId)).all();
 
       if (!team.length) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
       }
 
-      // NOTE: the previous version of this check was
-      //   team[0].ownerId === ctx.user.id || (await db.select()...)
-      // which is always truthy once you reach the second operand, because a
-      // Drizzle select() always resolves to an array object --- even an empty
-      // one is truthy in JS. That silently let any authenticated user view
-      // any team's details. Checking `.length` fixes it.
-      const membership = await getMembership(db, input.teamId, ctx.user.id);
+      const membership = getMembership(db, input.teamId, ctx.user.id);
       const hasAccess = team[0].ownerId === ctx.user.id || membership !== null;
 
       if (!hasAccess) {
@@ -159,20 +155,20 @@ export const teamRouter = router({
   getTeamMembers: protectedProcedure
     .input(z.object({ teamId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return [];
+      const db = getDb();
 
-      const team = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+      const team = db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1).all();
       const isOwner = team.length > 0 && team[0].ownerId === ctx.user.id;
 
-      if (!isOwner && !(await getMembership(db, input.teamId, ctx.user.id))) {
+      if (!isOwner && !getMembership(db, input.teamId, ctx.user.id)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "You are not a member of this team" });
       }
 
-      const members = await db
+      const members = db
         .select()
         .from(teamMembers)
-        .where(eq(teamMembers.teamId, input.teamId));
+        .where(eq(teamMembers.teamId, input.teamId))
+        .all();
 
       return members;
     }),
@@ -189,26 +185,26 @@ export const teamRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const db = getDb();
 
-      const team = await db.select().from(teams).where(eq(teams.id, input.teamId));
+      const team = db.select().from(teams).where(eq(teams.id, input.teamId)).all();
 
       if (!team.length || team[0].ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Only team owner can invite members" });
       }
 
       const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      const invitation = await db.insert(teamInvitations).values({
+      const invitation = db.insert(teamInvitations).values({
         teamId: input.teamId,
         email: input.email,
         role: input.role,
         token,
         invitedBy: ctx.user.id,
         expiresAt,
-      });
+        invitedAt: new Date().toISOString(),
+      }).run();
 
       const inviteActivity: any = {
         teamId: input.teamId,
@@ -217,11 +213,12 @@ export const teamRouter = router({
         resourceType: "team",
         resourceId: input.teamId,
         details: JSON.stringify({ email: input.email, role: input.role }),
+        timestamp: new Date().toISOString(),
       };
-      await db.insert(activityLog).values(inviteActivity);
+      db.insert(activityLog).values(inviteActivity).run();
 
       return {
-        id: invitation[0],
+        id: Number(invitation.lastInsertRowid),
         email: input.email,
         role: input.role,
         token,
@@ -235,13 +232,13 @@ export const teamRouter = router({
   acceptInvitation: protectedProcedure
     .input(z.object({ token: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const db = getDb();
 
-      const invitation = await db
+      const invitation = db
         .select()
         .from(teamInvitations)
-        .where(eq(teamInvitations.token, input.token));
+        .where(eq(teamInvitations.token, input.token))
+        .all();
 
       if (!invitation.length) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Invitation not found" });
@@ -253,24 +250,26 @@ export const teamRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Invitation already processed" });
       }
 
-      if (new Date() > inv.expiresAt) {
+      if (inv.expiresAt && new Date().toISOString() > inv.expiresAt) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Invitation expired" });
       }
 
-      const member = await db.insert(teamMembers).values({
+      db.insert(teamMembers).values({
         teamId: inv.teamId,
         userId: ctx.user.id,
         role: inv.role,
         invitedBy: inv.invitedBy,
         invitedAt: inv.invitedAt,
-        acceptedAt: new Date(),
+        acceptedAt: new Date().toISOString(),
+        joinedAt: new Date().toISOString(),
         status: "accepted",
-      });
+      }).run();
 
-      await db
+      db
         .update(teamInvitations)
-        .set({ status: "accepted", acceptedAt: new Date() })
-        .where(eq(teamInvitations.id, inv.id));
+        .set({ status: "accepted", acceptedAt: new Date().toISOString() })
+        .where(eq(teamInvitations.id, inv.id))
+        .run();
 
       const acceptActivity: any = {
         teamId: inv.teamId,
@@ -278,8 +277,9 @@ export const teamRouter = router({
         action: "ACCEPT_INVITATION",
         resourceType: "team",
         resourceId: inv.teamId,
+        timestamp: new Date().toISOString(),
       };
-      await db.insert(activityLog).values(acceptActivity);
+      db.insert(activityLog).values(acceptActivity).run();
 
       return { success: true, teamId: inv.teamId };
     }),
@@ -296,19 +296,19 @@ export const teamRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const db = getDb();
 
-      const team = await db.select().from(teams).where(eq(teams.id, input.teamId));
+      const team = db.select().from(teams).where(eq(teams.id, input.teamId)).all();
 
       if (!team.length || team[0].ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Only team owner can update roles" });
       }
 
-      await db
+      db
         .update(teamMembers)
         .set({ role: input.role })
-        .where(eq(teamMembers.id, input.memberId));
+        .where(eq(teamMembers.id, input.memberId))
+        .run();
 
       const updateRoleActivity: any = {
         teamId: input.teamId,
@@ -317,8 +317,9 @@ export const teamRouter = router({
         resourceType: "team",
         resourceId: input.teamId,
         details: JSON.stringify({ memberId: input.memberId, newRole: input.role }),
+        timestamp: new Date().toISOString(),
       };
-      await db.insert(activityLog).values(updateRoleActivity);
+      db.insert(activityLog).values(updateRoleActivity).run();
 
       return { success: true };
     }),
@@ -334,16 +335,15 @@ export const teamRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const db = getDb();
 
-      const team = await db.select().from(teams).where(eq(teams.id, input.teamId));
+      const team = db.select().from(teams).where(eq(teams.id, input.teamId)).all();
 
       if (!team.length || team[0].ownerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Only team owner can remove members" });
       }
 
-      await db.delete(teamMembers).where(eq(teamMembers.id, input.memberId));
+      db.delete(teamMembers).where(eq(teamMembers.id, input.memberId)).run();
 
       const removeActivity: any = {
         teamId: input.teamId,
@@ -352,8 +352,9 @@ export const teamRouter = router({
         resourceType: "team",
         resourceId: input.teamId,
         details: JSON.stringify({ memberId: input.memberId }),
+        timestamp: new Date().toISOString(),
       };
-      await db.insert(activityLog).values(removeActivity);
+      db.insert(activityLog).values(removeActivity).run();
 
       return { success: true };
     }),
@@ -370,23 +371,23 @@ export const teamRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return [];
+      const db = getDb();
 
-      const team = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+      const team = db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1).all();
       const isOwner = team.length > 0 && team[0].ownerId === ctx.user.id;
 
-      if (!isOwner && !(await getMembership(db, input.teamId, ctx.user.id))) {
+      if (!isOwner && !getMembership(db, input.teamId, ctx.user.id)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "You are not a member of this team" });
       }
 
-      const logs = await db
+      const logs = db
         .select()
         .from(activityLog)
         .where(eq(activityLog.teamId, input.teamId))
         .orderBy(desc(activityLog.timestamp))
         .limit(input.limit)
-        .offset(input.offset) as any;
+        .offset(input.offset)
+        .all();
 
       return logs;
     }),
@@ -404,35 +405,39 @@ export const teamRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const db = getDb();
 
-      const team = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+      const team = db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1).all();
       const isOwner = team.length > 0 && team[0].ownerId === ctx.user.id;
 
-      if (!isOwner && !(await getMembership(db, input.teamId, ctx.user.id))) {
+      if (!isOwner && !getMembership(db, input.teamId, ctx.user.id)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "You are not a member of this team" });
       }
 
-      const dashboard = await db.insert(sharedDashboards).values({
+      const dashboard = db.insert(sharedDashboards).values({
         teamId: input.teamId,
         name: input.name,
         description: input.description,
         createdBy: ctx.user.id,
         config: JSON.stringify(input.config),
-      });
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }).run();
+
+      const dashboardId = Number(dashboard.lastInsertRowid);
 
       const createDashActivity: any = {
         teamId: input.teamId,
         userId: ctx.user.id,
         action: "CREATE_DASHBOARD",
         resourceType: "dashboard",
-        resourceId: dashboard[0],
+        resourceId: dashboardId,
         details: JSON.stringify({ dashboardName: input.name }),
+        timestamp: new Date().toISOString(),
       };
-      await db.insert(activityLog).values(createDashActivity);
+      db.insert(activityLog).values(createDashActivity).run();
 
-      return { id: dashboard[0], name: input.name };
+      return { id: dashboardId, name: input.name };
     }),
 
   /**
@@ -441,20 +446,20 @@ export const teamRouter = router({
   getSharedDashboards: protectedProcedure
     .input(z.object({ teamId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return [];
+      const db = getDb();
 
-      const team = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+      const team = db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1).all();
       const isOwner = team.length > 0 && team[0].ownerId === ctx.user.id;
 
-      if (!isOwner && !(await getMembership(db, input.teamId, ctx.user.id))) {
+      if (!isOwner && !getMembership(db, input.teamId, ctx.user.id)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "You are not a member of this team" });
       }
 
-      const dashboards = await db
+      const dashboards = db
         .select()
         .from(sharedDashboards)
-        .where(eq(sharedDashboards.teamId, input.teamId));
+        .where(eq(sharedDashboards.teamId, input.teamId))
+        .all();
 
       return dashboards.map((d: typeof sharedDashboards.$inferSelect) => ({
         ...d,
@@ -475,8 +480,7 @@ export const teamRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const db = getDb();
 
       // Previously this had no check at all: any authenticated user could grant
       // themselves (or anyone) access to any dashboardId. Only the dashboard's
@@ -493,11 +497,12 @@ export const teamRouter = router({
         dashboardId: input.dashboardId,
         role: input.role,
         grantedBy: ctx.user.id,
+        grantedAt: new Date().toISOString(),
       };
       if (input.userId) accessData.userId = input.userId;
       if (input.teamId) accessData.teamId = input.teamId;
 
-      const access = await db.insert(dashboardAccess).values(accessData);
+      const access = db.insert(dashboardAccess).values(accessData).run();
 
       if (input.teamId) {
         const activityData: any = {
@@ -507,11 +512,12 @@ export const teamRouter = router({
           resourceType: "dashboard",
           resourceId: input.dashboardId,
           details: JSON.stringify({ role: input.role }),
+          timestamp: new Date().toISOString(),
         };
-        await db.insert(activityLog).values(activityData);
+        db.insert(activityLog).values(activityData).run();
       }
 
-      return { id: access[0], success: true };
+      return { id: Number(access.lastInsertRowid), success: true };
     }),
 
   /**
@@ -525,13 +531,13 @@ export const teamRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Dashboard not found" });
       }
 
-      const db = await getDb();
-      if (!db) return [];
+      const db = getDb();
 
-      const access = await db
+      const access = db
         .select()
         .from(dashboardAccess)
-        .where(eq(dashboardAccess.dashboardId, input.dashboardId));
+        .where(eq(dashboardAccess.dashboardId, input.dashboardId))
+        .all();
 
       return access;
     }),

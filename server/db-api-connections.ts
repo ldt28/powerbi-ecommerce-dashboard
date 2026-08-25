@@ -4,27 +4,23 @@ import { eq, and } from "drizzle-orm";
 import type { InsertApiConnection, ApiConnection } from "../drizzle/schema";
 
 /**
- * Create a new API connection
+ * Create a new API connection — SQLite version (synchronous db, no insertId)
  */
 export async function createApiConnection(
   userId: number,
   data: Omit<InsertApiConnection, "userId" | "createdAt" | "updatedAt">
 ): Promise<ApiConnection | null> {
-  const db = await getDb();
-  if (!db) return null;
+  const db = getDb();
 
-  const result = await db.insert(apiConnections).values({
+  const result = db.insert(apiConnections).values({
     ...data,
     userId,
-  } as InsertApiConnection);
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } as InsertApiConnection).run();
 
-  const id = result[0].insertId;
-  const connections = await db
-    .select()
-    .from(apiConnections)
-    .where(eq(apiConnections.id, Number(id)))
-    .limit(1);
-
+  const id = Number(result.lastInsertRowid);
+  const connections = db.select().from(apiConnections).where(eq(apiConnections.id, id)).all();
   return connections.length > 0 ? connections[0] : null;
 }
 
@@ -32,10 +28,8 @@ export async function createApiConnection(
  * Get all API connections for a user
  */
 export async function getUserApiConnections(userId: number): Promise<ApiConnection[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db.select().from(apiConnections).where(eq(apiConnections.userId, userId));
+  const db = getDb();
+  return db.select().from(apiConnections).where(eq(apiConnections.userId, userId)).all();
 }
 
 /**
@@ -45,15 +39,12 @@ export async function getApiConnectionById(
   connectionId: number,
   userId: number
 ): Promise<ApiConnection | null> {
-  const db = await getDb();
-  if (!db) return null;
-
-  const connections = await db
+  const db = getDb();
+  const connections = db
     .select()
     .from(apiConnections)
     .where(and(eq(apiConnections.id, connectionId), eq(apiConnections.userId, userId)))
-    .limit(1);
-
+    .all();
   return connections.length > 0 ? connections[0] : null;
 }
 
@@ -64,13 +55,12 @@ export async function getApiConnectionsByPlatform(
   userId: number,
   platform: string
 ): Promise<ApiConnection[]> {
-  const db = await getDb();
-  if (!db) return [];
-
+  const db = getDb();
   return db
     .select()
     .from(apiConnections)
-    .where(and(eq(apiConnections.userId, userId), eq(apiConnections.platform, platform)));
+    .where(and(eq(apiConnections.userId, userId), eq(apiConnections.platform, platform)))
+    .all();
 }
 
 /**
@@ -81,17 +71,11 @@ export async function updateApiConnection(
   userId: number,
   data: Partial<Omit<InsertApiConnection, "userId" | "createdAt">>
 ): Promise<ApiConnection | null> {
-  const db = await getDb();
-  if (!db) return null;
-
-  await db
-    .update(apiConnections)
-    .set({
-      ...data,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(apiConnections.id, connectionId), eq(apiConnections.userId, userId)));
-
+  const db = getDb();
+  db.update(apiConnections)
+    .set({ ...data, updatedAt: new Date().toISOString() })
+    .where(and(eq(apiConnections.id, connectionId), eq(apiConnections.userId, userId)))
+    .run();
   return getApiConnectionById(connectionId, userId);
 }
 
@@ -102,13 +86,10 @@ export async function deleteApiConnection(
   connectionId: number,
   userId: number
 ): Promise<boolean> {
-  const db = await getDb();
-  if (!db) return false;
-
-  const result = await db
-    .delete(apiConnections)
-    .where(and(eq(apiConnections.id, connectionId), eq(apiConnections.userId, userId)));
-
+  const db = getDb();
+  db.delete(apiConnections)
+    .where(and(eq(apiConnections.id, connectionId), eq(apiConnections.userId, userId)))
+    .run();
   return true;
 }
 
@@ -121,25 +102,22 @@ export async function updateSyncStatus(
   status: "idle" | "syncing" | "error",
   error?: string
 ): Promise<ApiConnection | null> {
-  const db = await getDb();
-  if (!db) return null;
-
+  const db = getDb();
   const updateData: any = {
     syncStatus: status,
-    updatedAt: new Date(),
+    updatedAt: new Date().toISOString(),
   };
 
   if (status === "error" && error) {
     updateData.syncError = error;
   } else if (status === "idle") {
-    updateData.lastSyncedAt = new Date();
+    updateData.lastSyncedAt = new Date().toISOString();
     updateData.syncError = null;
   }
 
-  await db
-    .update(apiConnections)
-    .set(updateData)
-    .where(and(eq(apiConnections.id, connectionId), eq(apiConnections.userId, userId)));
+  db.update(apiConnections).set(updateData)
+    .where(and(eq(apiConnections.id, connectionId), eq(apiConnections.userId, userId)))
+    .run();
 
   return getApiConnectionById(connectionId, userId);
 }
@@ -148,10 +126,7 @@ export async function updateSyncStatus(
  * Check if connection token is expired
  */
 export function isTokenExpired(connection: ApiConnection): boolean {
-  if (!connection.expiresAt) {
-    return false;
-  }
-
+  if (!connection.expiresAt) return false;
   return new Date() > new Date(connection.expiresAt);
 }
 
@@ -159,11 +134,10 @@ export function isTokenExpired(connection: ApiConnection): boolean {
  * Get active connections for a user
  */
 export async function getActiveApiConnections(userId: number): Promise<ApiConnection[]> {
-  const db = await getDb();
-  if (!db) return [];
-
+  const db = getDb();
   return db
     .select()
     .from(apiConnections)
-    .where(and(eq(apiConnections.userId, userId), eq(apiConnections.isActive, 1)));
+    .where(and(eq(apiConnections.userId, userId), eq(apiConnections.isActive, 1)))
+    .all();
 }

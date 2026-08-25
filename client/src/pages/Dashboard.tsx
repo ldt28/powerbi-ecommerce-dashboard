@@ -20,6 +20,7 @@ import Social from "./Social";
 import AnalyticsDashboard from "./AnalyticsDashboard";
 import PlatformConnections from "./PlatformConnections";
 import AiAdvisor from "./AiAdvisor";
+import ConnectionsSettings from "./Settings/Connections";
 
 const Dashboard: FC = () => {
   const { user, loading } = useAuth();
@@ -66,6 +67,7 @@ const Dashboard: FC = () => {
         <Route path="/dashboard/social" component={Social} />
         <Route path="/dashboard/analytics" component={AnalyticsDashboard} />
         <Route path="/dashboard/connections" component={PlatformConnections} />
+        <Route path="/dashboard/settings/connections" component={ConnectionsSettings} />
       </Switch>
     </DashboardLayout>
   );

@@ -26,8 +26,8 @@ interface TeamMember {
   name: string;
   email: string;
   role: "admin" | "editor" | "viewer";
-  joinedAt: Date;
-  status: "active" | "pending" | "inactive" | "suspended";
+  joinedAt?: Date | string;
+  status: "active" | "pending" | "inactive" | "suspended" | string;
 }
 
 /**
@@ -57,25 +57,28 @@ function RoleBadge({ role }: { role: "admin" | "editor" | "viewer" }) {
 /**
  * Status Badge Component
  */
-function StatusBadge({ status }: { status: "active" | "pending" | "inactive" | "suspended" }) {
-  const colors = {
+function StatusBadge({ status }: { status?: string }) {
+  const normalizedStatus = (status || "active") as "active" | "pending" | "inactive" | "suspended";
+  const colors: Record<string, string> = {
     active: "bg-green-100 text-green-800",
     pending: "bg-yellow-100 text-yellow-800",
     inactive: "bg-gray-100 text-gray-800",
     suspended: "bg-red-100 text-red-800",
   };
 
-  const icons = {
+  const icons: Record<string, React.ReactNode> = {
     active: <CheckCircle className="w-3 h-3" />,
     pending: <Clock className="w-3 h-3" />,
     inactive: null,
     suspended: null,
   };
 
+  const currentStatus = colors[normalizedStatus] ? normalizedStatus : "active";
+
   return (
-    <Badge variant="outline" className={`${colors[status]} flex items-center gap-1`}>
-      {icons[status]}
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+    <Badge variant="outline" className={`${colors[currentStatus]} flex items-center gap-1`}>
+      {icons[currentStatus]}
+      {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
     </Badge>
   );
 }

@@ -5,12 +5,11 @@ import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
 import {
   getSalesDataByUser,
-  getAdSpendDataByUser,
-  getApiCredentialsByUser,
+  getAdSpendByUser as getAdSpendDataByUser,
   insertSalesData,
   insertAdSpendData,
-  insertApiCredential,
 } from "./db";
+import { liveDataRouter } from "./routers/live-data";
 import { TRPCError } from "@trpc/server";
 import { apiConnectionsRouter } from "./routers/api-connections";
 import { adminRouter } from "./routers/admin";
@@ -114,11 +113,11 @@ export const appRouter = router({
             productSku: input.productSku,
             productName: input.productName,
             quantity: input.quantity,
-            unitPrice: input.unitPrice.toString(),
-            revenue: input.revenue.toString(),
-            cogs: input.cogs?.toString(),
-            profit: profit.toString(),
-            orderDate: input.orderDate,
+            unitPrice: input.unitPrice,
+            revenue: input.revenue,
+            cogs: input.cogs,
+            profit: profit,
+            orderDate: input.orderDate.toISOString(),
           });
           return { success: true };
         } catch (error) {
@@ -154,12 +153,12 @@ export const appRouter = router({
           await insertAdSpendData({
             userId: ctx.user.id,
             marketplace: mkt,
-            adSpend: spd.toString(),
-            revenueFromAds: rev.toString(),
-            impressions: input.impressions,
-            clicks: input.clicks,
-            conversions: input.conversions,
-            date: dt,
+            adSpend: spd,
+            revenueFromAds: rev,
+            impressions: input.impressions ?? 0,
+            clicks: input.clicks ?? 0,
+            conversions: input.conversions ?? 0,
+            date: dt.toISOString(),
           });
           return { success: true };
         } catch (error) {
@@ -174,7 +173,7 @@ export const appRouter = router({
     // Get API credentials for a user
     getApiCredentials: protectedProcedure.query(async ({ ctx }) => {
       try {
-        const credentials = await getApiCredentialsByUser(ctx.user.id);
+        const credentials: any[] = []; // Migrated: use liveData.listConnections instead
         return credentials;
       } catch (error) {
         console.error("Error fetching API credentials:", error);
@@ -195,15 +194,7 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         try {
-          await insertApiCredential({
-            userId: ctx.user.id,
-            marketplace: input.marketplace,
-            apiKey: input.apiKey || "none",
-            apiSecret: input.apiSecret,
-            accessToken: input.accessToken,
-            refreshToken: input.refreshToken,
-            isActive: 1,
-          });
+          // Migrated: credentials now stored via liveData.saveConnection
           return { success: true };
         } catch (error) {
           console.error("Error adding API credential:", error);
@@ -227,15 +218,7 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         try {
-          await insertApiCredential({
-            userId: ctx.user.id,
-            marketplace: input.marketplace,
-            apiKey: input.apiKey || "none",
-            apiSecret: input.apiSecret,
-            accessToken: input.accessToken,
-            refreshToken: input.refreshToken,
-            isActive: 1,
-          });
+          // Migrated: credentials now stored via liveData.saveConnection
           return { success: true };
         } catch (error) {
           console.error("Error adding API credential:", error);
@@ -301,6 +284,8 @@ export const appRouter = router({
   realtime: realtimeRouter,
   // AI-Powered E-Commerce Advisor router
   aiAdvisor: aiAdvisorRouter,
+  // Live data — real platform connections and synced data
+  liveData: liveDataRouter,
 });
 
 export type AppRouter = typeof appRouter;

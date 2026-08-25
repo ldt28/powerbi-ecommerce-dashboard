@@ -14,10 +14,10 @@ import { eq } from "drizzle-orm";
 const ownerProcedure = protectedProcedure.use(({ ctx, next }) => {
   // Check if user is the owner
   const ownerOpenId = process.env.OWNER_OPEN_ID;
-  if (ctx.user.openId !== ownerOpenId) {
+  if (ctx.user.openId !== ownerOpenId && ctx.user.role !== "admin") {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Only the owner can access admin features",
+      message: "Only admins/owners can access admin features",
     });
   }
   return next({ ctx });
@@ -31,9 +31,8 @@ export const adminRouter = router({
    */
   getAllUsers: ownerProcedure.query(async () => {
     try {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-      const allUsers = await db.select().from(users);
+      const db = getDb();
+      const allUsers = db.select().from(users).all();
       return allUsers;
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -56,27 +55,27 @@ export const adminRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        
+        const db = getDb();
+
         // Update user status
-        await db
+        db
           .update(users)
           .set({
             isSuspended: 1,
-            suspendedAt: new Date(),
+            suspendedAt: new Date().toISOString(),
             suspendedReason: input.reason || "Suspended by admin",
           })
-          .where(eq(users.id, input.userId));
+          .where(eq(users.id, input.userId))
+          .run();
 
         // Log the action
-        await db.insert(adminAuditLog).values({
+        db.insert(adminAuditLog).values({
           adminId: ctx.user.id,
           action: "SUSPEND_USER",
           targetUserId: input.userId,
           details: JSON.stringify({ reason: input.reason }),
-          timestamp: new Date(),
-        });
+          timestamp: new Date().toISOString(),
+        }).run();
 
         return { success: true, message: "User suspended successfully" };
       } catch (error) {
@@ -95,27 +94,27 @@ export const adminRouter = router({
     .input(z.object({ userId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        
+        const db = getDb();
+
         // Update user status
-        await db
+        db
           .update(users)
           .set({
             isSuspended: 0,
             suspendedAt: null,
             suspendedReason: null,
           })
-          .where(eq(users.id, input.userId));
+          .where(eq(users.id, input.userId))
+          .run();
 
         // Log the action
-        await db.insert(adminAuditLog).values({
+        db.insert(adminAuditLog).values({
           adminId: ctx.user.id,
           action: "UNSUSPEND_USER",
           targetUserId: input.userId,
           details: JSON.stringify({}),
-          timestamp: new Date(),
-        });
+          timestamp: new Date().toISOString(),
+        }).run();
 
         return { success: true, message: "User unsuspended successfully" };
       } catch (error) {
@@ -134,30 +133,30 @@ export const adminRouter = router({
     .input(z.object({ userId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        
+        const db = getDb();
+
         // Generate a temporary password reset token
         const resetToken = Math.random().toString(36).substring(2, 15);
-        const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
 
         // Update user with reset token
-        await db
+        db
           .update(users)
           .set({
             passwordResetToken: resetToken,
             passwordResetExpiry: resetTokenExpiry,
           })
-          .where(eq(users.id, input.userId));
+          .where(eq(users.id, input.userId))
+          .run();
 
         // Log the action
-        await db.insert(adminAuditLog).values({
+        db.insert(adminAuditLog).values({
           adminId: ctx.user.id,
           action: "RESET_PASSWORD",
           targetUserId: input.userId,
           details: JSON.stringify({ resetTokenExpiry }),
-          timestamp: new Date(),
-        });
+          timestamp: new Date().toISOString(),
+        }).run();
 
         return {
           success: true,
@@ -186,15 +185,15 @@ export const adminRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        
+        const db = getDb();
+
         // Prevent changing owner's role
-        const targetUser = await db
+        const targetUser = db
           .select()
           .from(users)
           .where(eq(users.id, input.userId))
-          .limit(1);
+          .limit(1)
+          .all();
 
         if (!targetUser.length) {
           throw new TRPCError({
@@ -211,19 +210,20 @@ export const adminRouter = router({
         }
 
         // Update user role
-        await db
+        db
           .update(users)
           .set({ role: input.newRole })
-          .where(eq(users.id, input.userId));
+          .where(eq(users.id, input.userId))
+          .run();
 
         // Log the action
-        await db.insert(adminAuditLog).values({
+        db.insert(adminAuditLog).values({
           adminId: ctx.user.id,
           action: "CHANGE_ROLE",
           targetUserId: input.userId,
           details: JSON.stringify({ newRole: input.newRole }),
-          timestamp: new Date(),
-        });
+          timestamp: new Date().toISOString(),
+        }).run();
 
         return { success: true, message: `User role changed to ${input.newRole}` };
       } catch (error) {
@@ -247,15 +247,15 @@ export const adminRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        
+        const db = getDb();
+
         // Prevent deleting owner
-        const targetUser = await db
+        const targetUser = db
           .select()
           .from(users)
           .where(eq(users.id, input.userId))
-          .limit(1);
+          .limit(1)
+          .all();
 
         if (!targetUser.length) {
           throw new TRPCError({
@@ -272,16 +272,16 @@ export const adminRouter = router({
         }
 
         // Delete user
-        await db.delete(users).where(eq(users.id, input.userId));
+        db.delete(users).where(eq(users.id, input.userId)).run();
 
         // Log the action
-        await db.insert(adminAuditLog).values({
+        db.insert(adminAuditLog).values({
           adminId: ctx.user.id,
           action: "DELETE_USER",
           targetUserId: input.userId,
           details: JSON.stringify({ reason: input.reason }),
-          timestamp: new Date(),
-        });
+          timestamp: new Date().toISOString(),
+        }).run();
 
         return { success: true, message: "User deleted successfully" };
       } catch (error) {
@@ -308,16 +308,16 @@ export const adminRouter = router({
     )
     .query(async ({ input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        
-        const logs = await db
+        const db = getDb();
+
+        const logs = db
           .select()
           .from(adminAuditLog)
           .where(input.action ? eq(adminAuditLog.action, input.action) : undefined)
           .orderBy(adminAuditLog.timestamp)
           .limit(input.limit)
-          .offset(input.offset);
+          .offset(input.offset)
+          .all();
 
         return logs;
       } catch (error) {
@@ -341,15 +341,15 @@ export const adminRouter = router({
     )
     .query(async ({ input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        
-        const logs = await db
+        const db = getDb();
+
+        const logs = db
           .select()
           .from(adminAuditLog)
           .where(eq(adminAuditLog.targetUserId, input.userId))
           .orderBy(adminAuditLog.timestamp)
-          .limit(input.limit);
+          .limit(input.limit)
+          .all();
 
         return logs;
       } catch (error) {
@@ -368,10 +368,9 @@ export const adminRouter = router({
    */
   getDashboardOverview: ownerProcedure.query(async () => {
     try {
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-      
-      const allUsers = await db.select().from(users);
+      const db = getDb();
+
+      const allUsers = db.select().from(users).all();
       const adminUsers = allUsers.filter((u: any) => u.role === "admin");
       const suspendedUsers = allUsers.filter((u: any) => u.isSuspended);
 

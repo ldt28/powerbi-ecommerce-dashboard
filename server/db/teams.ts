@@ -6,27 +6,27 @@ import { eq, and } from "drizzle-orm";
  * Create a new team
  */
 export async function createTeam(userId: number, teamName: string, description?: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
+  const db = getDb();
 
-  const res = await db
+  const res = db
     .insert(teams)
     .values({
       name: teamName,
       description,
       ownerId: userId,
-    });
+    })
+    .run();
 
-  const teamId = (res as any)[0]?.insertId || 1;
+  const teamId = Number(res.lastInsertRowid) || 1;
 
   // Add owner as admin member
-  await db.insert(teamMembers).values({
+  db.insert(teamMembers).values({
     teamId,
     userId,
     role: "admin",
     status: "accepted",
-    acceptedAt: new Date(),
-  });
+    acceptedAt: new Date().toISOString(),
+  }).run();
 
   // Log activity
   await logTeamActivity(teamId, userId, "TEAM_CREATED", "team", teamId, { teamName });
@@ -38,22 +38,23 @@ export async function createTeam(userId: number, teamName: string, description?:
  * Get team by ID with member count
  */
 export async function getTeamById(teamId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
+  const db = getDb();
 
-  const team = await db
+  const team = db
     .select()
     .from(teams)
     .where(eq(teams.id, teamId))
-    .limit(1);
+    .limit(1)
+    .all();
 
   if (!team.length) return null;
 
   // Get member count
-  const members = await db
+  const members = db
     .select()
     .from(teamMembers)
-    .where(eq(teamMembers.teamId, teamId));
+    .where(eq(teamMembers.teamId, teamId))
+    .all();
 
   return {
     ...team[0],
@@ -65,28 +66,23 @@ export async function getTeamById(teamId: number) {
  * Get all teams for a user
  */
 export async function getUserTeams(userId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
+  const db = getDb();
 
-  const userTeams = await db
+  const userTeams = db
     .select()
     .from(teamMembers)
-    .where(eq(teamMembers.userId, userId));
+    .where(eq(teamMembers.userId, userId))
+    .all();
 
   const teamIds = userTeams.map((tm) => tm.teamId);
 
   if (teamIds.length === 0) return [];
 
-  const teamList = await db
+  const teamList = db
     .select()
     .from(teams)
-    .where((t) => {
-      const conditions: any[] = [];
-      teamIds.forEach((id) => {
-        conditions.push(eq(t.id, id));
-      });
-      return conditions.length > 0 ? conditions[0] : undefined;
-    });
+    .all()
+    .filter(t => teamIds.includes(t.id));
 
   return teamList;
 }
@@ -100,32 +96,33 @@ export async function addTeamMember(
   role: "admin" | "editor" | "viewer",
   invitedBy: number
 ) {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
+  const db = getDb();
 
   // Check if already a member
-  const existing = await db
+  const existing = db
     .select()
     .from(teamMembers)
     .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, userId)))
-    .limit(1);
+    .limit(1)
+    .all();
 
   if (existing.length > 0) {
     throw new Error("User is already a member of this team");
   }
 
-  const res = await db
+  const res = db
     .insert(teamMembers)
     .values({
       teamId,
       userId,
       role,
       status: "accepted",
-      acceptedAt: new Date(),
+      acceptedAt: new Date().toISOString(),
       invitedBy,
-    });
+    })
+    .run();
 
-  const memberId = (res as any)[0]?.insertId || 1;
+  const memberId = Number(res.lastInsertRowid) || 1;
 
   // Log activity
   await logTeamActivity(teamId, invitedBy, "MEMBER_ADDED", "team_member", memberId, { userId, role });
@@ -142,24 +139,25 @@ export async function updateTeamMemberRole(
   newRole: "admin" | "editor" | "viewer",
   updatedBy: number
 ) {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
+  const db = getDb();
 
   // Check if updater is admin
-  const updaterRole = await db
+  const updaterRole = db
     .select()
     .from(teamMembers)
     .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, updatedBy)))
-    .limit(1);
+    .limit(1)
+    .all();
 
   if (!updaterRole.length || updaterRole[0].role !== "admin") {
     throw new Error("Only admins can update member roles");
   }
 
-  await db
+  db
     .update(teamMembers)
     .set({ role: newRole })
-    .where(eq(teamMembers.id, memberId));
+    .where(eq(teamMembers.id, memberId))
+    .run();
 
   // Log activity
   await logTeamActivity(teamId, updatedBy, "MEMBER_ROLE_UPDATED", "team_member", memberId, { newRole });
@@ -169,24 +167,25 @@ export async function updateTeamMemberRole(
  * Remove team member
  */
 export async function removeTeamMember(teamId: number, memberId: number, removedBy: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
+  const db = getDb();
 
   // Check if remover is admin
-  const removerRole = await db
+  const removerRole = db
     .select()
     .from(teamMembers)
     .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, removedBy)))
-    .limit(1);
+    .limit(1)
+    .all();
 
   if (!removerRole.length || removerRole[0].role !== "admin") {
     throw new Error("Only admins can remove members");
   }
 
-  await db
+  db
     .update(teamMembers)
     .set({ status: "rejected" })
-    .where(eq(teamMembers.id, memberId));
+    .where(eq(teamMembers.id, memberId))
+    .run();
 
   // Log activity
   await logTeamActivity(teamId, removedBy, "MEMBER_REMOVED", "team_member", memberId);
@@ -196,29 +195,25 @@ export async function removeTeamMember(teamId: number, memberId: number, removed
  * Get team members
  */
 export async function getTeamMembers(teamId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
+  const db = getDb();
 
   return db
     .select()
     .from(teamMembers)
-    .where(eq(teamMembers.teamId, teamId));
+    .where(eq(teamMembers.teamId, teamId))
+    .all();
 }
 
 /**
  * Whether userId has access to teamId at all: owner, or an accepted member.
- * Callers that only need "can this person see the team" (as opposed to the
- * admin-only checks already enforced deeper in updateTeamMemberRole /
- * removeTeamMember) should gate on this before returning team-scoped data.
  */
 export async function hasTeamAccess(teamId: number, userId: number): Promise<boolean> {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
+  const db = getDb();
 
-  const team = await db.select().from(teams).where(eq(teams.id, teamId)).limit(1);
+  const team = db.select().from(teams).where(eq(teams.id, teamId)).limit(1).all();
   if (team.length && team[0].ownerId === userId) return true;
 
-  const membership = await db
+  const membership = db
     .select()
     .from(teamMembers)
     .where(
@@ -228,7 +223,8 @@ export async function hasTeamAccess(teamId: number, userId: number): Promise<boo
         eq(teamMembers.status, "accepted")
       )
     )
-    .limit(1);
+    .limit(1)
+    .all();
 
   return membership.length > 0;
 }
@@ -244,30 +240,28 @@ export async function logTeamActivity(
   resourceId?: number,
   details?: any
 ) {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
+  const db = getDb();
 
-  await db.insert(teamActivityLog).values({
+  db.insert(teamActivityLog).values({
     teamId,
     userId,
     action,
     resourceType,
     resourceId,
     details: details ? JSON.stringify(details) : undefined,
-  });
+  }).run();
 }
 
 /**
  * Get team activity log
  */
 export async function getTeamActivityLog(teamId: number, limit: number = 50) {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
+  const db = getDb();
 
   return db
     .select()
     .from(teamActivityLog)
     .where(eq(teamActivityLog.teamId, teamId))
-    .orderBy((t) => t.createdAt)
-    .limit(limit);
+    .all()
+    .slice(-limit);
 }

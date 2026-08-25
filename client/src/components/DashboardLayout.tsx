@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Mail, Zap, Database, BarChart3, Share2, Settings, Search, History, UserCheck, Palette, Bell, Sparkles } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Mail, Zap, Database, BarChart3, Share2, Settings, Search, History, UserCheck, Palette, Bell, Sparkles, Plug } from "lucide-react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -42,7 +42,8 @@ const menuItems = [
   { icon: BarChart3, label: "Marketplace Comparison", path: "/marketplace-comparison" },
   { icon: Database, label: "Data Management", path: "/dashboard/data" },
   { icon: BarChart3, label: "Analytics Engine", path: "/dashboard/analytics" },
-  { icon: Zap, label: "Connections", path: "/dashboard/connections" },
+  { icon: Plug, label: "Platform Connections", path: "/dashboard/settings/connections" },
+  { icon: Zap, label: "Legacy Connections", path: "/dashboard/connections" },
   { icon: Share2, label: "Shared Dashboards", path: "/shared-dashboards" },
   { icon: LayoutDashboard, label: "Custom Dashboards", path: "/custom-dashboards" },
   { icon: Search, label: "Search & Filters", path: "/search-filters" },

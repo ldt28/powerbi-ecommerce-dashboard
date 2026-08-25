@@ -15,13 +15,12 @@ export const webstoreMetricsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const startDate = input.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const endDate = input.endDate || new Date();
+      const startDate = (input.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).toISOString();
+      const endDate = (input.endDate || new Date()).toISOString();
 
       // Query sales data for the store scoped to the current user
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
-      const data = await db
+      const db = getDb();
+      const data = db
         .select()
         .from(salesData)
         .where(
@@ -31,7 +30,8 @@ export const webstoreMetricsRouter = router({
             gte(salesData.orderDate, startDate),
             lte(salesData.orderDate, endDate)
           )
-        );
+        )
+        .all();
 
       // Calculate metrics from data
       const metrics = {
@@ -81,11 +81,10 @@ export const webstoreMetricsRouter = router({
     .query(async ({ ctx, input }) => {
       const period = input.period || "daily";
       const days = period === "daily" ? 30 : period === "weekly" ? 90 : 365;
-      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
-      const data = await db
+      const db = getDb();
+      const data = db
         .select()
         .from(salesData)
         .where(
@@ -94,7 +93,8 @@ export const webstoreMetricsRouter = router({
             eq(salesData.marketplace, input.storeName),
             gte(salesData.orderDate, startDate)
           )
-        );
+        )
+        .all();
 
       // Group data by period and calculate metric
       const trend = groupByPeriod(data, period, input.metric);
@@ -114,31 +114,32 @@ export const webstoreMetricsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
-      const currentData = await db
+      const db = getDb();
+      const currentData = db
         .select()
         .from(salesData)
         .where(
           and(
             eq(salesData.userId, ctx.user.id),
             eq(salesData.marketplace, input.storeName),
-            gte(salesData.orderDate, input.currentPeriodStart),
-            lte(salesData.orderDate, input.currentPeriodEnd)
+            gte(salesData.orderDate, input.currentPeriodStart.toISOString()),
+            lte(salesData.orderDate, input.currentPeriodEnd.toISOString())
           )
-        );
+        )
+        .all();
 
-      const previousData = await db
+      const previousData = db
         .select()
         .from(salesData)
         .where(
           and(
             eq(salesData.userId, ctx.user.id),
             eq(salesData.marketplace, input.storeName),
-            gte(salesData.orderDate, input.previousPeriodStart),
-            lte(salesData.orderDate, input.previousPeriodEnd)
+            gte(salesData.orderDate, input.previousPeriodStart.toISOString()),
+            lte(salesData.orderDate, input.previousPeriodEnd.toISOString())
           )
-        );
+        )
+        .all();
 
       const currentValue = calculateMetricValue(currentData, input.metric);
       const previousValue = calculateMetricValue(previousData, input.metric);
@@ -156,11 +157,11 @@ export const webstoreMetricsRouter = router({
 
 // Helper functions to calculate each metric
 function calculateGrossRevenue(data: any[]): number {
-  return data.reduce((sum, item) => sum + parseFloat(item.revenue || 0), 0);
+  return data.reduce((sum, item) => sum + Number(item.revenue || 0), 0);
 }
 
 function calculateGrossADV(data: any[]): number {
-  return data.reduce((sum, item) => sum + parseFloat(item.adSpend || 0), 0);
+  return data.reduce((sum, item) => sum + Number(item.adSpend || 0), 0);
 }
 
 function calculateAOV(data: any[]): number {
@@ -174,7 +175,7 @@ function calculateTotalSales(data: any[]): number {
 }
 
 function calculateDiscounts(data: any[]): number {
-  return data.reduce((sum, item) => sum + parseFloat(item.discounts || 0), 0);
+  return data.reduce((sum, item) => sum + Number(item.discounts || 0), 0);
 }
 
 function calculateGrossSales(data: any[]): number {
@@ -186,7 +187,7 @@ function calculateNewCustomerOrders(data: any[]): number {
 }
 
 function calculateNewCustomerRevenue(data: any[]): number {
-  return data.reduce((sum, item) => sum + parseFloat(item.newCustomerRevenue || 0), 0);
+  return data.reduce((sum, item) => sum + Number(item.newCustomerRevenue || 0), 0);
 }
 
 function calculateNewCustomers(data: any[]): number {
@@ -198,7 +199,7 @@ function calculateReturns(data: any[]): number {
 }
 
 function calculateSalesTaxes(data: any[]): number {
-  return data.reduce((sum, item) => sum + parseFloat(item.salesTaxes || 0), 0);
+  return data.reduce((sum, item) => sum + Number(item.salesTaxes || 0), 0);
 }
 
 function calculateUnitsSold(data: any[]): number {
@@ -206,11 +207,11 @@ function calculateUnitsSold(data: any[]): number {
 }
 
 function calculateReturningCustomerRevenue(data: any[]): number {
-  return data.reduce((sum, item) => sum + parseFloat(item.returningCustomerRevenue || 0), 0);
+  return data.reduce((sum, item) => sum + Number(item.returningCustomerRevenue || 0), 0);
 }
 
 function calculateOrdersOver0(data: any[]): number {
-  return data.filter((item) => parseFloat(item.revenue || 0) > 0).length;
+  return data.filter((item) => Number(item.revenue || 0) > 0).length;
 }
 
 function calculateMetricValue(data: any[], metric: string): number {

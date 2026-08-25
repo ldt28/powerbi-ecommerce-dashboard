@@ -43,7 +43,7 @@ export default function CustomerDashboard() {
       };
     }
     customerMetrics[customerId].orders += 1;
-    customerMetrics[customerId].totalSpent += parseFloat(item.revenue);
+    customerMetrics[customerId].totalSpent += Number(item.revenue || 0);
     customerMetrics[customerId].lastOrder = new Date(item.orderDate) > customerMetrics[customerId].lastOrder ? new Date(item.orderDate) : customerMetrics[customerId].lastOrder;
   });
 

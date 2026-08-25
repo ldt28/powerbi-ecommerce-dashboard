@@ -76,21 +76,20 @@ export async function createAnomalyAlert(
   actualValue: number,
   anomalyType: "spike" | "drop" | "trend_change"
 ) {
-  const db = await getDb();
-  if (!db) throw new Error("Database unavailable");
+  const db = getDb();
 
   const deviation = ((actualValue - expectedValue) / (expectedValue || 1)) * 100;
   const severity = Math.abs(deviation) > 50 ? "high" : Math.abs(deviation) > 25 ? "medium" : "low";
 
-  await db.insert(anomalyAlerts).values({
+  db.insert(anomalyAlerts).values({
     userId,
     metricName,
     anomalyType,
-    severity: severity as any,
-    expectedValue: expectedValue.toString(),
-    actualValue: actualValue.toString(),
-    deviation: deviation.toString(),
-  });
+    severity,
+    expectedValue,
+    actualValue,
+    deviation,
+  }).run();
 }
 
 // ============ FORECASTING & PREDICTIONS ============
@@ -165,8 +164,7 @@ export async function generatePredictions(
   historicalData: number[],
   forecastDays: number = 30
 ) {
-  const db = await getDb();
-  if (!db) throw new Error("Database unavailable");
+  const db = getDb();
 
   const { slope, intercept, r2 } = linearRegression(historicalData);
   const predictions: Array<{ date: Date; value: number }> = [];
@@ -187,18 +185,18 @@ export async function generatePredictions(
     rowsToInsert.push({
       userId,
       metricName,
-      predictionDate: forecastDate,
-      predictedValue: nonNegativeValue.toString(),
-      confidenceInterval: (95).toString(),
-      lowerBound: (nonNegativeValue * 0.85).toString(),
-      upperBound: (nonNegativeValue * 1.15).toString(),
+      predictionDate: forecastDate.toISOString(),
+      predictedValue: nonNegativeValue,
+      confidenceInterval: 95,
+      lowerBound: nonNegativeValue * 0.85,
+      upperBound: nonNegativeValue * 1.15,
       modelType: "linear",
-      accuracy: (r2 * 100).toString(),
+      accuracy: r2 * 100,
     });
   }
 
   if (rowsToInsert.length > 0) {
-    await db.insert(predictionsTable).values(rowsToInsert);
+    db.insert(predictionsTable).values(rowsToInsert).run();
   }
 
   return predictions;
@@ -215,21 +213,21 @@ export async function calculateCohortRetention(
   startDate: Date,
   endDate: Date
 ) {
-  const db = await getDb();
-  if (!db) throw new Error("Database unavailable");
+  const db = getDb();
 
   // Get all events for this cohort during the period
-  const events = await db
+  const events = db
     .select()
     .from(customerJourneyEvents)
     .where(
       and(
         eq(customerJourneyEvents.userId, userId),
-        gte(customerJourneyEvents.timestamp, startDate),
-        lte(customerJourneyEvents.timestamp, endDate)
+        gte(customerJourneyEvents.timestamp, startDate.toISOString()),
+        lte(customerJourneyEvents.timestamp, endDate.toISOString())
       )
     )
-    .limit(10000) as any;
+    .limit(10000)
+    .all();
 
   if (events.length === 0) {
     return { retentionRate: 0, churnRate: 100, avgRepeatPurchases: 0 };
@@ -367,32 +365,31 @@ export async function trackJourneyEvent(
   eventValue?: number,
   metadata?: Record<string, any>
 ) {
-  const db = await getDb();
-  if (!db) throw new Error("Database unavailable");
+  const db = getDb();
 
-  await db.insert(customerJourneyEvents).values({
+  db.insert(customerJourneyEvents).values({
     userId,
     customerId,
     eventType,
     eventName,
-    eventValue: eventValue?.toString(),
-    metadata: metadata ? JSON.stringify(metadata) : undefined,
-    timestamp: new Date(),
-  });
+    eventValue: eventValue ?? null,
+    metadata: metadata ? JSON.stringify(metadata) : null,
+    timestamp: new Date().toISOString(),
+  }).run();
 }
 
 /**
  * Get customer journey for a specific customer
  */
 export async function getCustomerJourney(userId: number, customerId: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database unavailable");
+  const db = getDb();
 
-  const journey = await db
+  const journey = db
     .select()
     .from(customerJourneyEvents)
-    .where(eq(customerJourneyEvents.customerId, customerId))
-    .orderBy(customerJourneyEvents.timestamp) as any;
+    .where(and(eq(customerJourneyEvents.userId, userId), eq(customerJourneyEvents.customerId, customerId)))
+    .orderBy(customerJourneyEvents.timestamp)
+    .all();
 
   return journey.map((event: any) => ({
     ...event,

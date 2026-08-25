@@ -34,8 +34,7 @@ export const dashboardCustomizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         const configData: any = {
           userId: ctx.user.id,
@@ -45,8 +44,8 @@ export const dashboardCustomizationRouter = router({
           isDefault: input.isDefault ? 1 : 0,
         };
 
-        const result = await db.insert(dashboardConfigs).values(configData);
-        return { id: result[0], ...input, message: "Dashboard configuration created" };
+        const result = db.insert(dashboardConfigs).values(configData).run();
+        return { id: Number(result.lastInsertRowid), ...input, message: "Dashboard configuration created" };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -60,13 +59,13 @@ export const dashboardCustomizationRouter = router({
    */
   getDashboardConfigs: protectedProcedure.query(async ({ ctx }) => {
     try {
-      const db = await getDb();
-      if (!db) return [];
+      const db = getDb();
 
-      const configs = await db
+      const configs = db
         .select()
         .from(dashboardConfigs)
-        .where(eq(dashboardConfigs.userId, ctx.user.id)) as any;
+        .where(eq(dashboardConfigs.userId, ctx.user.id))
+        .all();
 
       return configs.map((c: any) => ({
         ...c,
@@ -100,8 +99,7 @@ export const dashboardCustomizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         const updateData: any = {};
         if (input.configName) updateData.configName = input.configName;
@@ -109,10 +107,11 @@ export const dashboardCustomizationRouter = router({
         if (input.metrics) updateData.metrics = JSON.stringify(input.metrics);
         if (input.isDefault !== undefined) updateData.isDefault = input.isDefault ? 1 : 0;
 
-        await db
+        db
           .update(dashboardConfigs)
           .set(updateData)
-          .where(and(eq(dashboardConfigs.id, input.configId), eq(dashboardConfigs.userId, ctx.user.id)));
+          .where(and(eq(dashboardConfigs.id, input.configId), eq(dashboardConfigs.userId, ctx.user.id)))
+          .run();
 
         return { message: "Dashboard configuration updated" };
       } catch (error) {
@@ -130,12 +129,12 @@ export const dashboardCustomizationRouter = router({
     .input(z.object({ configId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
-        await db
+        db
           .delete(dashboardConfigs)
-          .where(and(eq(dashboardConfigs.id, input.configId), eq(dashboardConfigs.userId, ctx.user.id)));
+          .where(and(eq(dashboardConfigs.id, input.configId), eq(dashboardConfigs.userId, ctx.user.id)))
+          .run();
 
         return { message: "Dashboard configuration deleted" };
       } catch (error) {
@@ -169,8 +168,7 @@ export const dashboardCustomizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         const cardData: any = {
           userId: ctx.user.id,
@@ -188,8 +186,8 @@ export const dashboardCustomizationRouter = router({
           isVisible: 1,
         };
 
-        const result = await db.insert(metricCards).values(cardData);
-        return { id: result[0], ...input, message: "Metric card created" };
+        const result = db.insert(metricCards).values(cardData).run();
+        return { id: Number(result.lastInsertRowid), ...input, message: "Metric card created" };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -218,8 +216,7 @@ export const dashboardCustomizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         const updateData: any = {};
         if (input.cardColor) updateData.cardColor = input.cardColor;
@@ -232,10 +229,11 @@ export const dashboardCustomizationRouter = router({
         if (input.isVisible !== undefined) updateData.isVisible = input.isVisible ? 1 : 0;
         if (input.sortOrder !== undefined) updateData.sortOrder = input.sortOrder;
 
-        await db
+        db
           .update(metricCards)
           .set(updateData)
-          .where(and(eq(metricCards.id, input.cardId), eq(metricCards.userId, ctx.user.id)));
+          .where(and(eq(metricCards.id, input.cardId), eq(metricCards.userId, ctx.user.id)))
+          .run();
 
         return { message: "Metric card updated" };
       } catch (error) {
@@ -253,13 +251,13 @@ export const dashboardCustomizationRouter = router({
     .input(z.object({ configId: z.number() }))
     .query(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) return [];
+        const db = getDb();
 
-        const cards = await db
+        const cards = db
           .select()
           .from(metricCards)
-          .where(and(eq(metricCards.configId, input.configId), eq(metricCards.userId, ctx.user.id))) as any;
+          .where(and(eq(metricCards.configId, input.configId), eq(metricCards.userId, ctx.user.id)))
+          .all();
 
         return cards;
       } catch (error) {
@@ -285,8 +283,7 @@ export const dashboardCustomizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         const filterData: any = {
           userId: ctx.user.id,
@@ -296,8 +293,8 @@ export const dashboardCustomizationRouter = router({
           isActive: 1,
         };
 
-        const result = await db.insert(metricFilters).values(filterData);
-        return { id: result[0], ...input, message: "Filter added" };
+        const result = db.insert(metricFilters).values(filterData).run();
+        return { id: Number(result.lastInsertRowid), ...input, message: "Filter added" };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -313,13 +310,13 @@ export const dashboardCustomizationRouter = router({
     .input(z.object({ metricCardId: z.number() }))
     .query(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) return [];
+        const db = getDb();
 
-        const filters = await db
+        const filters = db
           .select()
           .from(metricFilters)
-          .where(and(eq(metricFilters.metricCardId, input.metricCardId), eq(metricFilters.userId, ctx.user.id))) as any;
+          .where(and(eq(metricFilters.metricCardId, input.metricCardId), eq(metricFilters.userId, ctx.user.id)))
+          .all();
 
         return filters.map((f: any) => ({
           ...f,
@@ -351,8 +348,7 @@ export const dashboardCustomizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         const thresholdData: any = {
           userId: ctx.user.id,
@@ -364,8 +360,8 @@ export const dashboardCustomizationRouter = router({
           alertEnabled: input.alertEnabled ? 1 : 0,
         };
 
-        const result = await db.insert(metricThresholds).values(thresholdData);
-        return { id: result[0], ...input, message: "Threshold set" };
+        const result = db.insert(metricThresholds).values(thresholdData).run();
+        return { id: Number(result.lastInsertRowid), ...input, message: "Threshold set" };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -381,14 +377,14 @@ export const dashboardCustomizationRouter = router({
     .input(z.object({ metricCardId: z.number() }))
     .query(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) return null;
+        const db = getDb();
 
-        const threshold = await db
+        const threshold = db
           .select()
           .from(metricThresholds)
           .where(and(eq(metricThresholds.metricCardId, input.metricCardId), eq(metricThresholds.userId, ctx.user.id)))
-          .limit(1) as any;
+          .limit(1)
+          .all();
 
         return threshold[0] || null;
       } catch (error) {
@@ -415,15 +411,15 @@ export const dashboardCustomizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         // Get the config to save as template
-        const config = await db
+        const config = db
           .select()
           .from(dashboardConfigs)
           .where(and(eq(dashboardConfigs.id, input.configId), eq(dashboardConfigs.userId, ctx.user.id)))
-          .limit(1) as any;
+          .limit(1)
+          .all();
 
         if (!config[0]) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Dashboard configuration not found" });
@@ -438,8 +434,8 @@ export const dashboardCustomizationRouter = router({
           usageCount: 0,
         };
 
-        const result = await db.insert(dashboardTemplates).values(templateData);
-        return { id: result[0], ...input, message: "Template saved" };
+        const result = db.insert(dashboardTemplates).values(templateData).run();
+        return { id: Number(result.lastInsertRowid), ...input, message: "Template saved" };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -453,13 +449,13 @@ export const dashboardCustomizationRouter = router({
    */
   getDashboardTemplates: protectedProcedure.query(async ({ ctx }) => {
     try {
-      const db = await getDb();
-      if (!db) return [];
+      const db = getDb();
 
-      const templates = await db
+      const templates = db
         .select()
         .from(dashboardTemplates)
-        .where(eq(dashboardTemplates.userId, ctx.user.id)) as any;
+        .where(eq(dashboardTemplates.userId, ctx.user.id))
+        .all();
 
       return templates.map((t: any) => ({
         ...t,
@@ -485,15 +481,15 @@ export const dashboardCustomizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         // Get template
-        const template = await db
+        const template = db
           .select()
           .from(dashboardTemplates)
           .where(eq(dashboardTemplates.id, input.templateId))
-          .limit(1) as any;
+          .limit(1)
+          .all();
 
         if (!template[0]) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
@@ -510,15 +506,16 @@ export const dashboardCustomizationRouter = router({
           isDefault: 0,
         };
 
-        const result = await db.insert(dashboardConfigs).values(configData);
+        const result = db.insert(dashboardConfigs).values(configData).run();
 
         // Increment template usage count
-        await db
+        db
           .update(dashboardTemplates)
           .set({ usageCount: template[0].usageCount + 1 })
-          .where(eq(dashboardTemplates.id, input.templateId));
+          .where(eq(dashboardTemplates.id, input.templateId))
+          .run();
 
-        return { id: result[0], message: "Template loaded and new config created" };
+        return { id: Number(result.lastInsertRowid), message: "Template loaded and new config created" };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -544,8 +541,7 @@ export const dashboardCustomizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         const exportData: any = {
           userId: ctx.user.id,
@@ -556,8 +552,8 @@ export const dashboardCustomizationRouter = router({
           fileUrl: input.fileUrl,
         };
 
-        const result = await db.insert(dashboardExports).values(exportData);
-        return { id: result[0], ...input, message: "Export recorded" };
+        const result = db.insert(dashboardExports).values(exportData).run();
+        return { id: Number(result.lastInsertRowid), ...input, message: "Export recorded" };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -578,16 +574,16 @@ export const dashboardCustomizationRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) return [];
+        const db = getDb();
 
-        const exports = await db
+        const exports = db
           .select()
           .from(dashboardExports)
           .where(eq(dashboardExports.userId, ctx.user.id))
           .orderBy(desc(dashboardExports.exportedAt))
           .limit(input.limit)
-          .offset(input.offset) as any;
+          .offset(input.offset)
+          .all();
 
         return exports;
       } catch (error) {
@@ -605,14 +601,14 @@ export const dashboardCustomizationRouter = router({
    */
   getActiveAlerts: protectedProcedure.query(async ({ ctx }) => {
     try {
-      const db = await getDb();
-      if (!db) return [];
+      const db = getDb();
 
-      const alerts = await db
+      const alerts = db
         .select()
         .from(dashboardAlerts)
         .where(and(eq(dashboardAlerts.userId, ctx.user.id), eq(dashboardAlerts.isResolved, 0)))
-        .orderBy(desc(dashboardAlerts.createdAt)) as any;
+        .orderBy(desc(dashboardAlerts.createdAt))
+        .all();
 
       return alerts;
     } catch (error) {
@@ -630,13 +626,13 @@ export const dashboardCustomizationRouter = router({
     .input(z.object({ alertId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
-        await db
+        db
           .update(dashboardAlerts)
-          .set({ isResolved: 1, resolvedAt: new Date() })
-          .where(and(eq(dashboardAlerts.id, input.alertId), eq(dashboardAlerts.userId, ctx.user.id)));
+          .set({ isResolved: 1, resolvedAt: new Date().toISOString() })
+          .where(and(eq(dashboardAlerts.id, input.alertId), eq(dashboardAlerts.userId, ctx.user.id)))
+          .run();
 
         return { message: "Alert resolved" };
       } catch (error) {

@@ -4,6 +4,8 @@ import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
 import { TokenEncryption } from "./utils/encryption";
 
+export type OAuth2Token = typeof oauth2Tokens.$inferSelect;
+
 /**
  * Decrypt helper that treats a bad/legacy value as "unusable" instead of
  * throwing, so a token stored before encryption was wired up (or a corrupted
@@ -232,12 +234,11 @@ export class OAuth2Service {
     userInfo: OAuth2UserInfo,
     scope: string
   ) {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
+    const db = getDb();
 
-    const expiresAt = new Date(Date.now() + (tokenResponse.expires_in || 3600) * 1000);
+    const expiresAt = new Date(Date.now() + (tokenResponse.expires_in || 3600) * 1000).toISOString();
 
-    return db.insert(oauth2Tokens).values({
+    db.insert(oauth2Tokens).values({
       userId,
       platform,
       // Tokens are encrypted at rest (AES-256-GCM) since this table holds live
@@ -255,21 +256,93 @@ export class OAuth2Service {
       accountName: userInfo.name || null,
       profilePicture: userInfo.picture || null,
       isActive: 1,
-    });
+      lastRefreshedAt: new Date().toISOString(),
+      refreshAttempts: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }).run();
+  }
+
+  /**
+   * Refresh OAuth2 token
+   */
+  static async refreshToken(token: OAuth2Token): Promise<OAuth2Token> {
+    const config = OAUTH2_CONFIGS[token.platform];
+    if (!config || !token.refreshToken) {
+      throw new Error(`Cannot refresh token for platform: ${token.platform}`);
+    }
+
+    try {
+      const response = await fetch(config.tokenEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: token.refreshToken,
+          client_id: config.clientId,
+          client_secret: config.clientSecret,
+        }).toString(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to refresh token: ${response.statusText}`);
+      }
+
+      const newTokenResponse: OAuth2TokenResponse = await response.json();
+      const expiresAt = new Date(Date.now() + (newTokenResponse.expires_in || 3600) * 1000).toISOString();
+      const db = getDb();
+
+      // token.refreshToken is already decrypted here (getToken decrypts on read),
+      // so re-encrypt before persisting the refreshed values.
+      const refreshTokenPlain = newTokenResponse.refresh_token || token.refreshToken;
+
+      db
+        .update(oauth2Tokens)
+        .set({
+          accessToken: TokenEncryption.encrypt(newTokenResponse.access_token),
+          refreshToken: refreshTokenPlain ? TokenEncryption.encrypt(refreshTokenPlain) : null,
+          expiresAt,
+          lastRefreshedAt: new Date().toISOString(),
+          refreshAttempts: 0,
+          lastRefreshError: null,
+        })
+        .where(eq(oauth2Tokens.id, token.id))
+        .run();
+
+      return {
+        ...token,
+        accessToken: newTokenResponse.access_token,
+        expiresAt,
+      };
+    } catch (error) {
+      // Update refresh attempt count and error
+      const db = getDb();
+
+      db
+        .update(oauth2Tokens)
+        .set({
+          refreshAttempts: token.refreshAttempts + 1,
+          lastRefreshError: error instanceof Error ? error.message : "Unknown error",
+        })
+        .where(eq(oauth2Tokens.id, token.id))
+        .run();
+
+      throw error;
+    }
   }
 
   /**
    * Get stored OAuth2 token (decrypted)
    */
   static async getToken(userId: number, platform: string) {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
+    const db = getDb();
 
-    const tokens = await db
+    const tokens = db
       .select()
       .from(oauth2Tokens)
       .where(and(eq(oauth2Tokens.userId, userId), eq(oauth2Tokens.platform, platform)))
-      .limit(1);
+      .limit(1)
+      .all();
 
     const token = tokens[0];
     if (!token) return null;
@@ -314,49 +387,7 @@ export class OAuth2Service {
     }
 
     // Refresh the token
-    try {
-      const newTokenResponse = await this.refreshAccessToken(platform, token.refreshToken);
-
-      const expiresAt = new Date(Date.now() + (newTokenResponse.expires_in || 3600) * 1000);
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
-      // token.refreshToken is already decrypted here (getToken decrypts on read),
-      // so re-encrypt before persisting the refreshed values.
-      const refreshTokenPlain = newTokenResponse.refresh_token || token.refreshToken;
-
-      await db
-        .update(oauth2Tokens)
-        .set({
-          accessToken: TokenEncryption.encrypt(newTokenResponse.access_token),
-          refreshToken: refreshTokenPlain ? TokenEncryption.encrypt(refreshTokenPlain) : null,
-          expiresAt,
-          lastRefreshedAt: new Date(),
-          refreshAttempts: 0,
-          lastRefreshError: null,
-        })
-        .where(eq(oauth2Tokens.id, token.id));
-
-      return {
-        ...token,
-        accessToken: newTokenResponse.access_token,
-        expiresAt,
-      };
-    } catch (error) {
-      // Update refresh attempt count and error
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
-
-      await db
-        .update(oauth2Tokens)
-        .set({
-          refreshAttempts: token.refreshAttempts + 1,
-          lastRefreshError: error instanceof Error ? error.message : "Unknown error",
-        })
-        .where(eq(oauth2Tokens.id, token.id));
-
-      throw error;
-    }
+    return this.refreshToken(token as OAuth2Token);
   }
 
   /**
@@ -390,12 +421,12 @@ export class OAuth2Service {
     const token = await this.getToken(userId, platform);
     if (token) {
       await this.revokeToken(platform, token.accessToken);
-      const db = await getDb();
-      if (!db) throw new Error("Database not available");
+      const db = getDb();
 
-      await db
+      db
         .delete(oauth2Tokens)
-        .where(and(eq(oauth2Tokens.userId, userId), eq(oauth2Tokens.platform, platform)));
+        .where(and(eq(oauth2Tokens.userId, userId), eq(oauth2Tokens.platform, platform)))
+        .run();
     }
   }
 
@@ -403,13 +434,13 @@ export class OAuth2Service {
    * List all OAuth2 tokens for a user (decrypted)
    */
   static async listTokens(userId: number) {
-    const db = await getDb();
-    if (!db) throw new Error("Database not available");
+    const db = getDb();
 
-    const tokens = await db
+    const tokens = db
       .select()
       .from(oauth2Tokens)
-      .where(eq(oauth2Tokens.userId, userId));
+      .where(eq(oauth2Tokens.userId, userId))
+      .all();
 
     return tokens.map((token) => ({
       ...token,

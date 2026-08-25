@@ -124,11 +124,10 @@ export const platformConnectionsRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
         }
 
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        const db = getDb();
 
         // Check if connection already exists
-        const existing = await db
+        const existing = db
           .select()
           .from(apiConnections)
           .where(
@@ -138,7 +137,8 @@ export const platformConnectionsRouter = router({
               eq(apiConnections.accountId, input.accountId)
             )
           )
-          .limit(1);
+          .limit(1)
+          .all();
 
         const encryptedAccessToken = TokenEncryption.encrypt(input.accessToken);
         const encryptedRefreshToken = input.refreshToken
@@ -147,20 +147,21 @@ export const platformConnectionsRouter = router({
 
         if (existing.length > 0) {
           // Update existing connection
-          await db
+          db
             .update(apiConnections)
             .set({
               connectionName: input.connectionName,
               accessToken: encryptedAccessToken,
               refreshToken: encryptedRefreshToken || existing[0].refreshToken,
-              expiresAt: input.expiresAt,
+              expiresAt: input.expiresAt ? input.expiresAt.toISOString() : undefined,
               accountEmail: input.accountEmail,
               accountName: input.accountName,
               isActive: 1,
               syncStatus: "idle",
               syncError: null,
             })
-            .where(eq(apiConnections.id, existing[0].id));
+            .where(eq(apiConnections.id, existing[0].id))
+            .run();
 
           return {
             id: existing[0].id,
@@ -172,25 +173,25 @@ export const platformConnectionsRouter = router({
           };
         } else {
           // Create new connection
-          const result = await db.insert(apiConnections).values({
+          const result = db.insert(apiConnections).values({
             userId: input.userId,
             platform: input.platform,
             connectionName: input.connectionName,
             connectionType: input.connectionType,
             accessToken: encryptedAccessToken,
             refreshToken: encryptedRefreshToken,
-            expiresAt: input.expiresAt,
+            expiresAt: input.expiresAt ? input.expiresAt.toISOString() : undefined,
             accountId: input.accountId,
             accountEmail: input.accountEmail,
             accountName: input.accountName,
             isActive: 1,
             syncStatus: "idle",
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }).run();
 
           return {
-            id: result[0].insertId,
+            id: Number(result.lastInsertRowid),
             platform: input.platform,
             connectionName: input.connectionName,
             accountEmail: input.accountEmail,
@@ -279,14 +280,15 @@ export const platformConnectionsRouter = router({
         }
 
         // Update sync status
-        await db
+        db
           .update(apiConnections)
           .set({
             syncStatus: input.syncStatus,
             syncError: input.syncError || null,
-            lastSyncedAt: input.syncStatus === "success" ? new Date() : conn.lastSyncedAt,
+            lastSyncedAt: input.syncStatus === "success" ? new Date().toISOString() : conn.lastSyncedAt,
           })
-          .where(eq(apiConnections.id, input.connectionId));
+          .where(eq(apiConnections.id, input.connectionId))
+          .run();
 
         return { success: true, message: "Sync status updated" };
       } catch (error) {

@@ -13,12 +13,12 @@ export const exportSchedulingRouter = router({
    * List all export schedules for current user
    */
   listSchedules: protectedProcedure.query(async ({ ctx }) => {
-    const db = await getDb();
-    if (!db) return [];
-    const schedules = await db
+    const db = getDb();
+    const schedules = db
       .select()
       .from(exportSchedules)
-      .where(eq(exportSchedules.userId, ctx.user.id));
+      .where(eq(exportSchedules.userId, ctx.user.id))
+      .all();
     return schedules;
   }),
 
@@ -40,9 +40,8 @@ export const exportSchedulingRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return { success: false };
-      const result = await db.insert(exportSchedules).values({
+      const db = getDb();
+      const result = db.insert(exportSchedules).values({
         userId: ctx.user.id,
         name: input.name,
         format: input.format,
@@ -53,11 +52,11 @@ export const exportSchedulingRouter = router({
         emailRecipients: JSON.stringify(input.emailRecipients),
         includeMetrics: JSON.stringify(input.includeMetrics),
         isActive: input.isActive ? 1 : 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }).run();
 
-      return { success: true, id: (result as any)[0]?.insertId };
+      return { success: true, id: Number(result.lastInsertRowid) };
     }),
 
   /**
@@ -79,9 +78,8 @@ export const exportSchedulingRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return { success: false };
-      await db
+      const db = getDb();
+      db
         .update(exportSchedules)
         .set({
           name: input.name,
@@ -93,14 +91,15 @@ export const exportSchedulingRouter = router({
           emailRecipients: JSON.stringify(input.emailRecipients),
           includeMetrics: JSON.stringify(input.includeMetrics),
           isActive: input.isActive ? 1 : 0,
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         })
         .where(
           and(
             eq(exportSchedules.id, input.id),
             eq(exportSchedules.userId, ctx.user.id)
           )
-        );
+        )
+        .run();
 
       return { success: true };
     }),
@@ -111,16 +110,16 @@ export const exportSchedulingRouter = router({
   deleteSchedule: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return { success: false };
-      await db
+      const db = getDb();
+      db
         .delete(exportSchedules)
         .where(
           and(
             eq(exportSchedules.id, input.id),
             eq(exportSchedules.userId, ctx.user.id)
           )
-        );
+        )
+        .run();
 
       return { success: true };
     }),
@@ -131,20 +130,20 @@ export const exportSchedulingRouter = router({
   toggleSchedule: protectedProcedure
     .input(z.object({ id: z.number(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return { success: false };
-      await db
+      const db = getDb();
+      db
         .update(exportSchedules)
         .set({
           isActive: input.isActive ? 1 : 0,
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         })
         .where(
           and(
             eq(exportSchedules.id, input.id),
             eq(exportSchedules.userId, ctx.user.id)
           )
-        );
+        )
+        .run();
 
       return { success: true };
     }),

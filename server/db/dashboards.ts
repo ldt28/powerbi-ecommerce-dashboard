@@ -336,20 +336,16 @@ export async function getDashboardAccessLevel(
   return share[0].permission as "view" | "edit" | "admin";
 }
 
-/**
- * Update view count
- */
 export async function incrementDashboardViews(dashboardId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database connection failed");
-
-  await db
+  const db = getDb();
+  db
     .update(customDashboards)
     .set({
       viewCount: sql`${customDashboards.viewCount} + 1`,
-      lastViewedAt: new Date(),
+      lastViewedAt: new Date().toISOString(),
     })
-    .where(eq(customDashboards.id, dashboardId));
+    .where(eq(customDashboards.id, dashboardId))
+    .run();
 }
 
 /**

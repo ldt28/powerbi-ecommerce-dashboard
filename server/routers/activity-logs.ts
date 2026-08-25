@@ -17,21 +17,21 @@ export const activityLogsRouter = router({
       changes: z.record(z.string(), z.any()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const db = getDb();
 
       const numericResourceId = input.resourceId ? (typeof input.resourceId === "string" ? parseInt(input.resourceId, 10) : input.resourceId) : undefined;
 
-      const res = await db.insert(activityLog).values({
+      const res = db.insert(activityLog).values({
         teamId: input.teamId || 1,
         userId: ctx.user.id,
         action: input.action,
         resourceType: input.resourceType,
         resourceId: isNaN(numericResourceId as number) ? undefined : numericResourceId,
         details: input.details ? JSON.stringify(input.details) : undefined,
-      });
+        timestamp: new Date().toISOString(),
+      }).run();
 
-      return { success: true, id: (res as any)[0]?.insertId };
+      return { success: true, id: Number(res.lastInsertRowid) };
     }),
 
   // Get activity logs with filtering
@@ -46,8 +46,7 @@ export const activityLogsRouter = router({
       endDate: z.date().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return { logs: [], total: 0 };
+      const db = getDb();
 
       const conditions = [];
 
@@ -65,27 +64,28 @@ export const activityLogsRouter = router({
       }
 
       if (input.startDate) {
-        conditions.push(gte(activityLog.timestamp, input.startDate));
+        conditions.push(gte(activityLog.timestamp, input.startDate.toISOString()));
       }
 
       if (input.endDate) {
-        conditions.push(lte(activityLog.timestamp, input.endDate));
+        conditions.push(lte(activityLog.timestamp, input.endDate.toISOString()));
       }
 
-      const logs = await db
+      const logs = db
         .select()
         .from(activityLog)
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(desc(activityLog.timestamp))
         .limit(input.limit)
-        .offset(input.offset);
+        .offset(input.offset)
+        .all();
 
       return {
         logs: logs.map((log) => ({
           ...log,
           id: String(log.id),
           details: log.details ? (typeof log.details === "string" ? JSON.parse(log.details) : log.details) : {},
-          timestamp: log.timestamp.toISOString(),
+          timestamp: typeof log.timestamp === "string" ? log.timestamp : new Date(log.timestamp).toISOString(),
         })),
         total: logs.length,
       };
@@ -93,10 +93,9 @@ export const activityLogsRouter = router({
 
   // Get activity stats
   getActivityStats: protectedProcedure.query(async ({ ctx }) => {
-    const db = await getDb();
-    if (!db) return { total: 0, actions: {}, resourceTypes: {}, users: {} };
+    const db = getDb();
 
-    const logs = await db.select().from(activityLog).limit(500);
+    const logs = db.select().from(activityLog).limit(500).all();
 
     const stats = {
       total: logs.length,

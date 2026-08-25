@@ -28,7 +28,7 @@ export async function setupDevAuth(app: Express) {
       name: DEMO_USER_NAME,
       email: DEMO_USER_EMAIL,
       loginMethod: "demo",
-      lastSignedIn: new Date(),
+      lastSignedIn: new Date().toISOString(),
     });
     console.log("[Dev Auth] Demo user created/updated successfully");
   } catch (error) {
@@ -69,7 +69,7 @@ export async function setupDevAuth(app: Express) {
     }
 
     // Check if session cookie already exists
-    const sessionCookie = req.cookies?.["manus-session"];
+    const sessionCookie = req.cookies?.[COOKIE_NAME];
     if (sessionCookie) {
       return next();
     }
@@ -84,7 +84,7 @@ export async function setupDevAuth(app: Express) {
           });
 
           const cookieOptions = getSessionCookieOptions(req);
-          res.cookie("manus-session", sessionToken, {
+          res.cookie(COOKIE_NAME, sessionToken, {
             ...cookieOptions,
             maxAge: ONE_YEAR_MS,
           });

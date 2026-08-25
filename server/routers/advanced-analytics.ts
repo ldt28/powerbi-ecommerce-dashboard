@@ -198,20 +198,19 @@ export const advancedAnalyticsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         const cohortData: any = {
           userId: ctx.user.id,
           cohortName: input.cohortName,
           cohortType: input.cohortType,
-          startDate: input.startDate,
-          endDate: input.endDate,
+          startDate: input.startDate.toISOString(),
+          endDate: input.endDate?.toISOString(),
           memberCount: 0,
         };
 
-        const result = await db.insert(cohorts).values(cohortData);
-        return { id: result[0], ...input, message: "Cohort created successfully" };
+        const result = db.insert(cohorts).values(cohortData).run();
+        return { id: Number(result.lastInsertRowid), ...input, message: "Cohort created successfully" };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -427,8 +426,7 @@ export const advancedAnalyticsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const db = getDb();
 
         const funnelData: any = {
           userId: ctx.user.id,
@@ -440,12 +438,12 @@ export const advancedAnalyticsRouter = router({
           step3Count: 0,
           step4Count: 0,
           step5Count: 0,
-          conversionRate: "0",
-          dropoffRate: "0",
+          conversionRate: 0,
+          dropoffRate: 0,
         };
 
-        const result = await db.insert(funnelAnalysis).values(funnelData);
-        return { id: result[0], ...input, message: "Funnel created successfully" };
+        const result = db.insert(funnelAnalysis).values(funnelData).run();
+        return { id: Number(result.lastInsertRowid), ...input, message: "Funnel created successfully" };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",

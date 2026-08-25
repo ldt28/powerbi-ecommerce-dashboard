@@ -279,10 +279,16 @@ class SDKServer {
           openId: sessionUserId,
           name: session.name || "Demo User",
           email: "demo@example.com",
-          role: "admin",
+          role: "admin" as const,
           loginMethod: "demo",
-          createdAt: signedInAt,
-          lastSignedIn: signedInAt,
+          isSuspended: 0,
+          suspendedAt: null,
+          suspendedReason: null,
+          passwordResetToken: null,
+          passwordResetExpiry: null,
+          createdAt: signedInAt.toISOString(),
+          updatedAt: signedInAt.toISOString(),
+          lastSignedIn: signedInAt.toISOString(),
         } as User;
       }
 
@@ -293,7 +299,7 @@ class SDKServer {
           name: userInfo.name || null,
           email: userInfo.email ?? null,
           loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt,
+          lastSignedIn: signedInAt.toISOString(),
         });
         user = await db.getUserByOpenId(userInfo.openId);
       } catch (error) {
@@ -308,7 +314,7 @@ class SDKServer {
 
     await db.upsertUser({
       openId: user.openId,
-      lastSignedIn: signedInAt,
+      lastSignedIn: signedInAt.toISOString(),
     });
 
     return user;

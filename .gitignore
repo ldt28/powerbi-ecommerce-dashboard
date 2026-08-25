@@ -105,4 +105,6 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+data/
 .project-config.json
+tsc_errors*.txt

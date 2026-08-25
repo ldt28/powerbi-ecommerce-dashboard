@@ -16,24 +16,24 @@ export const teamManagementRouter = router({
   listInvitations: protectedProcedure
     .input(z.object({ teamId: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return [];
+      const db = getDb();
 
       try {
         const teamId = input?.teamId || 1;
-        const invitations = await db
+        const invitations = db
           .select()
           .from(teamInvitations)
           .where(eq(teamInvitations.teamId, teamId))
-          .orderBy(desc(teamInvitations.invitedAt));
+          .orderBy(desc(teamInvitations.invitedAt))
+          .all();
 
         return invitations.map((inv) => ({
           id: String(inv.id),
           email: inv.email,
           role: inv.role as "admin" | "editor" | "viewer",
           status: inv.status as "pending" | "accepted" | "expired",
-          createdAt: inv.invitedAt ? inv.invitedAt.toISOString() : new Date().toISOString(),
-          expiresAt: inv.expiresAt ? inv.expiresAt.toISOString() : new Date().toISOString(),
+          createdAt: typeof inv.invitedAt === "string" ? inv.invitedAt : new Date().toISOString(),
+          expiresAt: typeof inv.expiresAt === "string" ? inv.expiresAt : new Date().toISOString(),
         }));
       } catch (err) {
         console.error("Error listing team invitations:", err);
@@ -54,31 +54,32 @@ export const teamManagementRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
+      const db = getDb();
 
       // Generate invitation token
       const token = crypto.randomBytes(32).toString("hex");
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
 
       // Create invitation
-      await db.insert(teamInvitations).values({
+      db.insert(teamInvitations).values({
         teamId: input.teamId || 1, // Default to team 1
         email: input.email,
         role: input.role,
         token,
         invitedBy: ctx.user.id,
         expiresAt,
-      });
+        invitedAt: new Date().toISOString(),
+      }).run();
 
       // Log activity
-      await db.insert(activityLog).values({
+      db.insert(activityLog).values({
         teamId: input.teamId || 1,
         userId: ctx.user.id,
         action: "INVITE_MEMBER",
         resourceType: "team_member",
         details: JSON.stringify({ email: input.email, role: input.role, message: input.message }),
-      });
+        timestamp: new Date().toISOString(),
+      }).run();
 
       console.log(`Invitation email sent to ${input.email} with token: ${token}`);
 
@@ -91,21 +92,21 @@ export const teamManagementRouter = router({
   resendInvitation: protectedProcedure
     .input(z.object({ invitationId: z.union([z.string(), z.number()]) }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
+      const db = getDb();
 
       const numericId = typeof input.invitationId === "string" ? parseInt(input.invitationId, 10) : input.invitationId;
       const newToken = crypto.randomBytes(32).toString("hex");
-      const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      await db
+      db
         .update(teamInvitations)
         .set({
           token: newToken,
           expiresAt: newExpiresAt,
           status: "pending",
         })
-        .where(eq(teamInvitations.id, numericId));
+        .where(eq(teamInvitations.id, numericId))
+        .run();
 
       return { success: true };
     }),
@@ -116,15 +117,15 @@ export const teamManagementRouter = router({
   cancelInvitation: protectedProcedure
     .input(z.object({ invitationId: z.union([z.string(), z.number()]) }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
+      const db = getDb();
 
       const numericId = typeof input.invitationId === "string" ? parseInt(input.invitationId, 10) : input.invitationId;
 
-      await db
+      db
         .update(teamInvitations)
         .set({ status: "expired" })
-        .where(eq(teamInvitations.id, numericId));
+        .where(eq(teamInvitations.id, numericId))
+        .run();
 
       return { success: true };
     }),
@@ -135,46 +136,49 @@ export const teamManagementRouter = router({
   acceptInvitation: protectedProcedure
     .input(z.object({ token: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
+      const db = getDb();
 
       // Find invitation
-      const invitation = await db
+      const invitation = db
         .select()
         .from(teamInvitations)
         .where(eq(teamInvitations.token, input.token))
-        .limit(1);
+        .limit(1)
+        .all();
 
       if (!invitation.length || invitation[0].status !== "pending") {
         throw new Error("Invalid or expired invitation");
       }
 
-      if (invitation[0].expiresAt && new Date() > invitation[0].expiresAt) {
+      if (invitation[0].expiresAt && new Date().toISOString() > invitation[0].expiresAt) {
         throw new Error("Invitation has expired");
       }
 
       // Add user to team
-      await db.insert(teamMembers).values({
+      db.insert(teamMembers).values({
         teamId: invitation[0].teamId,
         userId: ctx.user.id,
         role: invitation[0].role,
         status: "accepted",
-        acceptedAt: new Date(),
-      });
+        acceptedAt: new Date().toISOString(),
+        joinedAt: new Date().toISOString(),
+      }).run();
 
       // Update invitation status
-      await db
+      db
         .update(teamInvitations)
-        .set({ status: "accepted", acceptedAt: new Date() })
-        .where(eq(teamInvitations.id, invitation[0].id));
+        .set({ status: "accepted", acceptedAt: new Date().toISOString() })
+        .where(eq(teamInvitations.id, invitation[0].id))
+        .run();
 
       // Log activity
-      await db.insert(activityLog).values({
+      db.insert(activityLog).values({
         teamId: invitation[0].teamId,
         userId: ctx.user.id,
         action: "ACCEPT_INVITATION",
         resourceType: "team_member",
-      });
+        timestamp: new Date().toISOString(),
+      }).run();
 
       return { success: true };
     }),
@@ -185,13 +189,13 @@ export const teamManagementRouter = router({
   listTeamMembers: protectedProcedure
     .input(z.object({ teamId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
+      const db = getDb();
 
-      const members = await db
+      const members = db
         .select()
         .from(teamMembers)
-        .where(eq(teamMembers.teamId, input.teamId || 1));
+        .where(eq(teamMembers.teamId, input?.teamId || 1))
+        .all();
 
       return members;
     }),
@@ -208,11 +212,10 @@ export const teamManagementRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
+      const db = getDb();
 
       // Check if user is admin
-      const userRole = await db
+      const userRole = db
         .select()
         .from(teamMembers)
         .where(
@@ -220,27 +223,30 @@ export const teamManagementRouter = router({
             eq(teamMembers.teamId, input.teamId || 1),
             eq(teamMembers.userId, ctx.user.id)
           )
-        );
+        )
+        .all();
 
       if (ctx.user.role !== "admin" && (!userRole.length || userRole[0].role !== "admin")) {
         throw new Error("Only admins can update member roles");
       }
 
       // Update member role
-      await db
+      db
         .update(teamMembers)
         .set({ role: input.role })
-        .where(eq(teamMembers.id, input.memberId));
+        .where(eq(teamMembers.id, input.memberId))
+        .run();
 
       // Log activity
-      await db.insert(activityLog).values({
+      db.insert(activityLog).values({
         teamId: input.teamId || 1,
         userId: ctx.user.id,
         action: "UPDATE_MEMBER_ROLE",
         resourceType: "team_member",
         resourceId: input.memberId,
         details: JSON.stringify({ newRole: input.role }),
-      });
+        timestamp: new Date().toISOString(),
+      }).run();
 
       return { success: true };
     }),
@@ -256,11 +262,10 @@ export const teamManagementRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
+      const db = getDb();
 
       // Check if user is admin
-      const userRole = await db
+      const userRole = db
         .select()
         .from(teamMembers)
         .where(
@@ -268,26 +273,29 @@ export const teamManagementRouter = router({
             eq(teamMembers.teamId, input.teamId || 1),
             eq(teamMembers.userId, ctx.user.id)
           )
-        );
+        )
+        .all();
 
       if (ctx.user.role !== "admin" && (!userRole.length || userRole[0].role !== "admin")) {
         throw new Error("Only admins can remove members");
       }
 
       // Remove member by marking as rejected
-      await db
+      db
         .update(teamMembers)
         .set({ status: "rejected" })
-        .where(eq(teamMembers.id, input.memberId));
+        .where(eq(teamMembers.id, input.memberId))
+        .run();
 
       // Log activity
-      await db.insert(activityLog).values({
+      db.insert(activityLog).values({
         teamId: input.teamId || 1,
         userId: ctx.user.id,
         action: "REMOVE_MEMBER",
         resourceType: "team_member",
         resourceId: input.memberId,
-      });
+        timestamp: new Date().toISOString(),
+      }).run();
 
       return { success: true };
     }),
@@ -303,15 +311,15 @@ export const teamManagementRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return [];
+      const db = getDb();
 
-      const logs = await db
+      const logs = db
         .select()
         .from(activityLog)
-        .where(eq(activityLog.teamId, input.teamId || 1))
+        .where(eq(activityLog.teamId, input?.teamId || 1))
         .orderBy(desc(activityLog.timestamp))
-        .limit(input.limit);
+        .limit(input.limit)
+        .all();
 
       return logs;
     }),
@@ -322,18 +330,18 @@ export const teamManagementRouter = router({
   getPendingInvitations: protectedProcedure
     .input(z.object({ teamId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) return [];
+      const db = getDb();
 
-      const invitations = await db
+      const invitations = db
         .select()
         .from(teamInvitations)
         .where(
           and(
-            eq(teamInvitations.teamId, input.teamId || 1),
+            eq(teamInvitations.teamId, input?.teamId || 1),
             eq(teamInvitations.status, "pending")
           )
-        );
+        )
+        .all();
 
       return invitations;
     }),
@@ -344,14 +352,14 @@ export const teamManagementRouter = router({
   getTeamInfo: protectedProcedure
     .input(z.object({ teamId: z.number().optional() }))
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new Error("Database connection failed");
+      const db = getDb();
 
-      const team = await db
+      const team = db
         .select()
         .from(teams)
-        .where(eq(teams.id, input.teamId || 1))
-        .limit(1);
+        .where(eq(teams.id, input?.teamId || 1))
+        .limit(1)
+        .all();
 
       if (!team.length) {
         throw new Error("Team not found");
