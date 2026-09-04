@@ -359,12 +359,19 @@ export const platformConnectionsRouter = router({
   getOAuthUrl: protectedProcedure
     .input(
       z.object({
-        platform: z.enum(["google_analytics", "facebook_ads", "youtube"]),
+        platform: z.enum(["google_analytics", "facebook_ads", "youtube", "amazon"]),
         returnUrl: z.string(),
       })
     )
     .query(async ({ input, ctx }) => {
       try {
+        if (input.platform === "amazon") {
+          const appId = process.env.AMAZON_APP_ID || "amzn1.sp.solution.adf19697-568f-4d08-a4b8-20033b003e36";
+          const statePayload = JSON.stringify({ userId: ctx.user.id, returnUrl: input.returnUrl });
+          const amazonAuthUrl = `https://sellercentral.amazon.com/apps/authorize/consent?application_id=${encodeURIComponent(appId)}&state=${encodeURIComponent(statePayload)}&version=beta`;
+          return { url: amazonAuthUrl };
+        }
+
         const baseUrls: Record<string, string> = {
           google_analytics:
             "https://accounts.google.com/o/oauth2/v2/auth?scope=https://www.googleapis.com/auth/analytics.readonly&access_type=offline&response_type=code",

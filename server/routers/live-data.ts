@@ -54,7 +54,7 @@ function buildCreds(platform: Platform, cred: any): any {
   switch (platform) {
     case "amazon":          return { sellerId: c1, marketplaceId: c2, clientId: c3, clientSecret: c4, refreshToken: c5 } as AmazonCredentials;
     case "bigcommerce":     return { storeHash: c1, accessToken: c2 } as BigCommerceCredentials;
-    case "ebay":            return { appId: c1, certId: c2, devId: c3, refreshToken: c4 } as EbayCredentials;
+    case "ebay":            return { appId: c1, certId: c2, devId: c3, refreshToken: c4, environment: (c5?.toLowerCase() === "sandbox" ? "sandbox" : "production") } as EbayCredentials;
     case "walmart":         return { clientId: c1, clientSecret: c2 } as WalmartCredentials;
     case "google_analytics": return { propertyId: c1, serviceAccountJson: c2 } as GA4Credentials;
     case "meta_ads":        return { appId: c1, appSecret: c2, accessToken: c3, adAccountId: c4 } as MetaAdsCredentials;

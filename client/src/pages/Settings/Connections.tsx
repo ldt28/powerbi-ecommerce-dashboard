@@ -57,8 +57,9 @@ const PLATFORMS: PlatformDef[] = [
     fields: [
       { key: "credential1", label: "App ID (Client ID)", placeholder: "MyApp-12345-..." },
       { key: "credential2", label: "Cert ID (Client Secret)", placeholder: "••••••••", secret: true },
-      { key: "credential3", label: "Dev ID", placeholder: "xxxxxxxx-xxxx-xxxx-..." },
+      { key: "credential3", label: "Dev ID (Optional)", placeholder: "xxxxxxxx-xxxx-xxxx-..." },
       { key: "credential4", label: "OAuth User Refresh Token", placeholder: "v^1.1#i^1#r^1...", secret: true },
+      { key: "credential5", label: "Environment (production or sandbox)", placeholder: "production" },
     ],
   },
   {
@@ -121,6 +122,19 @@ export default function ConnectionsPage() {
   const [showSecrets, setShowSecrets] = useState(false);
 
   const { data: connections, refetch } = trpc.liveData.listConnections.useQuery();
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connected") === "amazon") {
+      toast.success("🎉 Amazon Seller Central connected successfully via OAuth!");
+      refetch();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get("error") === "amazon_auth_failed") {
+      toast.error("❌ Failed to complete Amazon authorization. Please try again.");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [refetch]);
+
   const saveMutation = trpc.liveData.saveConnection.useMutation({
     onSuccess: () => { toast.success("Credentials saved!"); refetch(); setActivePlatform(null); setForm({}); },
     onError: (e) => toast.error(`Save failed: ${e.message}`),
@@ -240,6 +254,30 @@ export default function ConnectionsPage() {
             </div>
 
             <div className="modal-body">
+              {activePlatform === "amazon" && (
+                <div className="oauth-quick-connect" style={{ marginBottom: "1.5rem", padding: "1.1rem", background: "rgba(255, 153, 0, 0.08)", border: "1px solid rgba(255, 153, 0, 0.3)", borderRadius: "8px" }}>
+                  <div style={{ fontWeight: 600, color: "#FF9900", marginBottom: "0.3rem", fontSize: "0.95rem" }}>⚡ 1-Click Seller Connect (Recommended)</div>
+                  <p style={{ fontSize: "0.82rem", color: "var(--text-secondary, #94a3b8)", marginBottom: "0.85rem", lineHeight: 1.4 }}>
+                    Any store owner can click below to log into Amazon Seller Central and authorize this app. Orders and revenue will sync automatically.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ background: "#FF9900", borderColor: "#FF9900", color: "#111", fontWeight: 700, width: "100%", padding: "0.6rem 1rem" }}
+                    onClick={() => {
+                      const appId = "amzn1.sp.solution.adf19697-568f-4d08-a4b8-20033b003e36";
+                      const state = encodeURIComponent(JSON.stringify({ returnUrl: window.location.pathname }));
+                      window.location.href = `https://sellercentral.amazon.com/apps/authorize/consent?application_id=${encodeURIComponent(appId)}&state=${state}&version=beta`;
+                    }}
+                  >
+                    🛒 Authorize with Amazon Seller Central
+                  </button>
+                  <div style={{ textAlign: "center", margin: "0.85rem 0 0", fontSize: "0.75rem", opacity: 0.6, letterSpacing: "0.03em" }}>
+                    — OR CONFIGURE MANUALLY —
+                  </div>
+                </div>
+              )}
+
               <div className="form-group">
                 <label>Connection Label</label>
                 <input
