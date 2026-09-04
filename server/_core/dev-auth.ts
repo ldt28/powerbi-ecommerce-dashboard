@@ -14,8 +14,8 @@ const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
  * Creates a demo user and auto-logs them in for development purposes
  */
 export async function setupDevAuth(app: Express) {
-  // Only enable in non-production mode
-  if (process.env.NODE_ENV === "production") {
+  // Enable whenever OAuth server is not configured or in dev mode
+  if (process.env.NODE_ENV === "production" && process.env.OAUTH_SERVER_URL) {
     return;
   }
 
